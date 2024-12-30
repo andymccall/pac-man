@@ -4,10 +4,15 @@
 ; URL: https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/#vdu-12-clear-text-area-cls
 ;
 ; Inputs: None
-vdu_screen_clear:
+vdu_screen_text_clear:
     ld a, VDU_CLS
     rst.lil $10
     ret
+
+vdu_screen_graphics_clear:
+	ld a, VDU_CLG
+    rst.lil $10
+	ret
 
 ; Name: vdu_screen_set_mode
 ; Description: Set the screen mode

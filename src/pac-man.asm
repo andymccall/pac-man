@@ -2,7 +2,7 @@
 ; Title:		       Pac-Man
 ;
 ; Description:         A port of the 1980's game Pac-Man to the Agon Light 2
-; Author:		       Andy McCall, mailme@andymccall.co.uk, others welcome!
+; Author:		       Andy McCall, mailme@bitriot.dev, others welcome!
 ;
 ; Created:		       2024-11-25 @ 17:28
 ; Last Updated:	       2024-11-25 @ 17:28
@@ -20,6 +20,7 @@
 
 ; API includes
     include "src/includes/system/mos_api.inc"
+    include "src/includes/system/macro_stack.inc"
     include "src/includes/api/vdu.inc"
     include "src/includes/api/vdu_screen.inc"
     include "src/includes/api/vdu_cursor.inc"
@@ -34,10 +35,12 @@
     include "src/includes/api/macro_text.inc"
     include "src/includes/api/macro_bitmap.inc"
 
+; Splash
+    include "src/includes/game/vdu_splash_data.inc"
+
 ; Game includes
     include "src/includes/game/globals.inc"
     include "src/includes/game/vdu_game_data.inc"
-    include "src/includes/game/vdu_splash_data.inc"
     include "src/includes/game/images_sprites.inc"
     include "src/includes/game/timer.inc"
     include "src/includes/game/maze/maze.inc"
@@ -78,11 +81,7 @@ animation_counter:   db 10
 
 start:
 
-    push af
-    push bc
-    push de
-    push ix
-    push iy
+    macro_stack_push_all
 
     call vdu_buffer_clear_all
 
@@ -94,9 +93,8 @@ start:
 
     call vdu_cursor_off
 
-    ; Sending a VDU byte stream containing the logo
-    ld hl, vdu_logo_data
-    ld bc, vdu_logo_data_end - vdu_logo_data
+    ld hl, vdu_splash_data
+    ld bc, vdu_splash_data_end - vdu_splash_data
     rst.lil VDU_OUTPUT_TO_VDP
 
     ; Display the splash screen
@@ -119,12 +117,16 @@ splash_loop:
 wait_on_credit:
 
     ; Clear the screen
-    call vdu_screen_clear
+    call vdu_screen_text_clear
+    call vdu_screen_graphics_clear
 
     ; Load the VDU data for the game sprites and tiles
     ld hl, vdu_game_data
     ld bc, vdu_game_data_end - vdu_game_data
     rst.lil VDU_OUTPUT_TO_VDP
+    ; Activate the sprites
+    ld a, SPRITE_COUNT
+    call vdu_sprite_activate
 
     ; Placeholders for the precredit menu
     ld hl, precredit_placeholder_message
@@ -154,10 +156,12 @@ wait_on_credit_loop:
 
 player_select:
 
-    ; ***** UNCOMMENTING THIS call to vdu_screen_clear WILL CAUSE THE GAME NOT DISPLAY SPRITES *****
-
     ; Clear the screen to get rid of the menu
-    ;call vdu_screen_clear
+    call vdu_screen_text_clear
+    call vdu_screen_graphics_clear
+    ; Reactivate the sprites as they were cleared
+    ld a, SPRITE_COUNT
+    call vdu_sprite_activate
 
     ; Placeholders for the precredit menu
     ld hl, select_players_message
@@ -192,10 +196,12 @@ player_select_loop:
 
 continue_after_player_select:
 
-    ; ***** UNCOMMENTING THIS call to vdu_screen_clear WILL CAUSE THE GAME NOT DISPLAY THE MAZE OR SPRITES *****
-
     ;Clear the screen to get rid of the player select menu
-    ;call vdu_screen_clear
+    call vdu_screen_text_clear
+    call vdu_screen_graphics_clear
+    ; Reactivate the sprites as they were cleared
+    ld a, SPRITE_COUNT
+    call vdu_sprite_activate
 
     ; Print the 1UP text
     ld hl, up1_txt
@@ -377,14 +383,13 @@ quit:
     ld hl, quit_msg
     call vdu_text_print
 
-    pop iy
-    pop ix
-    pop de
-    pop bc
-    pop af
+    macro_stack_pop_all
+
     ld hl,0
 
     ret
+
+; End of game
 
 precredit_placeholder_message:
     .db "Precredit placeholder menu, insert credit with C",13,10,0
@@ -415,8 +420,8 @@ ready_txt:
     .db     "READY!"
 ready_txt_end:
 
-pac_man:     EQU     0
-sprite:     EQU     0
+pac_man:        EQU     0
+sprite:         EQU     0
 sprite_x:
      .dw 250
 sprite_y:

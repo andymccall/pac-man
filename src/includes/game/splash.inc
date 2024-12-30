@@ -1,6 +1,6 @@
 small_screen:
 
-    push ix
+    macro_stack_push_all
 
 ; Top line
     ld a, VDU_COL_WHITE
@@ -209,6 +209,6 @@ small_screen:
     ld de, 135
     call vdu_bitmap_plot
 
-    pop ix
+    macro_stack_pop_all
 
     ret

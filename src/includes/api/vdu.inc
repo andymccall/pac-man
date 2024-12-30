@@ -77,6 +77,8 @@ VDU_SCALING_OFF:                    equ 0
 ; https://agonconsole8.github.io/agon-docs/vdp/VDU-Commands/#vdu-12-clear-text-area-cls
 VDU_CLS:                            equ 12  
 
+VDU_CLG:                            equ 16
+
 vdu_refresh:
     ld hl,@cmd         
     ld bc,@end-@cmd    
