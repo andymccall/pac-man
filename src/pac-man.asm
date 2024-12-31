@@ -31,6 +31,7 @@
     include "src/includes/api/vdu_color.inc"
     include "src/includes/api/sprite.inc"
     include "src/includes/api/vdu_sprite.inc"
+    include "src/includes/api/keyboard.inc"
     include "src/includes/api/macro_sprite.inc"
     include "src/includes/api/macro_text.inc"
     include "src/includes/api/macro_bitmap.inc"
@@ -102,6 +103,8 @@ start:
 
 splash_loop:
 
+    call game_timer_tick
+
     ; Get a pointer to the keyboard map
     ld a, mos_getkbmap
 	rst.lil $08
@@ -111,22 +114,17 @@ splash_loop:
     bit 2, a
     jp nz, wait_on_credit
 
-    ; Otherwise wait on the splash screen to time out
     jp splash_loop
 
 wait_on_credit:
 
     ; Clear the screen
-    call vdu_screen_text_clear
     call vdu_screen_graphics_clear
 
     ; Load the VDU data for the game sprites and tiles
     ld hl, vdu_game_data
     ld bc, vdu_game_data_end - vdu_game_data
     rst.lil VDU_OUTPUT_TO_VDP
-    ; Activate the sprites
-    ld a, SPRITE_COUNT
-    call vdu_sprite_activate
 
     ; Placeholders for the precredit menu
     ld hl, precredit_placeholder_message
@@ -156,19 +154,24 @@ wait_on_credit_loop:
 
 player_select:
 
-    ; Clear the screen to get rid of the menu
-    call vdu_screen_text_clear
+    ;Clear the screen to get rid of the player select menu
     call vdu_screen_graphics_clear
-    ; Reactivate the sprites as they were cleared
-    ld a, SPRITE_COUNT
-    call vdu_sprite_activate
+
+    ; If we clear the text screen, we need to
+    ; reactivate the sprites as they were cleared
+    ; in the text screen clear routine
+    ;call vdu_screen_text_clear
+    ;ld a, SPRITE_COUNT
+    ;call vdu_sprite_activate
 
     ; Placeholders for the precredit menu
-    ld hl, select_players_message
+    ld hl, one_player_message
     call vdu_text_print
 
 player_select_loop:
     
+    call credit_display
+
     ld a, mos_getkbmap
 	rst.lil $08
 
@@ -187,21 +190,33 @@ player_select_loop:
     bit 0, a
     call nz, continue_after_player_select
 
+    ld a, (credit)
+    cp 1
+    jp z, one_player
+two_player:
+    ; Placeholders for the precredit menu
+    ld hl, two_player_message
+    call vdu_text_print
+
     ; If the 2 key is pressed
     ld a, (ix + $06)
     bit 1, a
     call nz, continue_after_player_select
 
+one_player:
     jp player_select_loop
 
 continue_after_player_select:
 
     ;Clear the screen to get rid of the player select menu
-    call vdu_screen_text_clear
     call vdu_screen_graphics_clear
-    ; Reactivate the sprites as they were cleared
-    ld a, SPRITE_COUNT
-    call vdu_sprite_activate
+
+    ; If we clear the text screen, we need to
+    ; reactivate the sprites as they were cleared
+    ; in the text screen clear routine
+    ;call vdu_screen_text_clear
+    ;ld a, SPRITE_COUNT
+    ;call vdu_sprite_activate
 
     ; Print the 1UP text
     ld hl, up1_txt
@@ -303,6 +318,7 @@ game_loop:
     call vdu_sprite_select
     call vdu_sprite_next_frame
 
+    ; Reset the animation counter
     ld a, 10 ;
     ld hl, animation_counter
     ld (hl), a 
@@ -394,8 +410,13 @@ quit:
 precredit_placeholder_message:
     .db "Precredit placeholder menu, insert credit with C",13,10,0
 
-select_players_message:
-    .db "Select number of players, 1 - 1 player 2 - 2 player",13,10,0
+one_player_message:
+    .db 31, 27, 20
+    .db "1 PLAYER ONLY",13,10,0
+
+two_player_message:
+    .db 31, 27, 20
+    .db "1 OR 2 PLAYERS",13,10,0
 
 quit_msg:
     .db "Thank you for playing Pac-Man!",13,10,0
