@@ -1,7 +1,11 @@
-
-
 credit:
     .db  0
+
+player_one_credit:
+    .db 0
+
+palyer_two_credit:
+    .db 0
 
 credit_deposit:
     ld a, (credit)
@@ -11,6 +15,7 @@ credit_deposit:
     ret
 
 credit_display:
+    macro_text_set_color VDU_COL_WHITE
     ld hl, credit_data
     call vdu_text_print
     ld a, (credit)
@@ -18,10 +23,12 @@ credit_display:
     ret
 
 credit_data:
-    .db     31, 19, 41
+    .db     31, 18, 41
     .db     "CREDIT ",0
 credit_data_end:
 
+; CREDIT: Code from Richard Turnnidge's assembly port of my Number Guess game
+; TODO: study this code and understand how it works, rewrite in my own style
 printDec:               ; debug A to screen as 3 char string pos
 
     push af
@@ -81,14 +88,9 @@ _lastDigit:
 
     ret 
 
-
-debugOut:
 answer:         .db     "000"       ; string to output
-endDebugOut:
 
 base:           .db     0       ; used in calculations
-
-; -----------------
 
 C_Div_D:
 ;Inputs:

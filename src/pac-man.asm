@@ -51,6 +51,7 @@
     include "src/includes/game/credit.inc"
     include "src/includes/game/player.inc"
     include "src/includes/game/pause.inc"
+    include "src/includes/game/high_menu.inc"
 
 ; Character Sprites
     include "src/includes/game/sprites/pac_man/pac_man.inc"
@@ -130,6 +131,10 @@ wait_on_credit:
     ld hl, precredit_placeholder_message
     call vdu_text_print
 
+    call display_1up
+    call display_high_score
+    call display_2up
+
 wait_on_credit_loop:
 
     ld a, mos_getkbmap
@@ -165,12 +170,30 @@ player_select:
     ;call vdu_sprite_activate
 
     ; Placeholders for the precredit menu
+    macro_text_set_color VDU_COL_BRIGHT_YELLOW
+
     ld hl, one_player_message
     call vdu_text_print
 
 player_select_loop:
     
+    call display_1up
+    call display_high_score
+    call display_2up
     call credit_display
+
+    macro_text_set_color VDU_COL_BRIGHT_YELLOW
+
+    ld hl, push_start_data
+    call vdu_text_print
+    
+    macro_text_set_color VDU_COL_WHITE
+
+    ld hl, bonus_message
+    call vdu_text_print
+
+    ld hl, trade_and_copy_message
+    call vdu_text_print
 
     ld a, mos_getkbmap
 	rst.lil $08
@@ -192,18 +215,19 @@ player_select_loop:
 
     ld a, (credit)
     cp 1
-    jp z, one_player
+    jp z, player_select_loop
+
 two_player:
     ; Placeholders for the precredit menu
+    macro_text_set_color VDU_COL_BRIGHT_YELLOW
     ld hl, two_player_message
     call vdu_text_print
+    macro_text_set_color VDU_COL_WHITE
 
     ; If the 2 key is pressed
     ld a, (ix + $06)
     bit 1, a
     call nz, continue_after_player_select
-
-one_player:
     jp player_select_loop
 
 continue_after_player_select:
@@ -218,27 +242,13 @@ continue_after_player_select:
     ;ld a, SPRITE_COUNT
     ;call vdu_sprite_activate
 
-    ; Print the 1UP text
-    ld hl, up1_txt
-    ld bc, up1_txt_end - up1_txt
-    rst.lil VDU_OUTPUT_TO_VDP
-
-    ; Print the high score
-    ld hl, high_score_data
-    ld bc, high_score_data_end - high_score_data
-    rst.lil VDU_OUTPUT_TO_VDP
-
-    ; Print the 2UP text
-    ld hl, up2_txt
-    ld bc, up2_txt_end - up2_txt
-    rst.lil VDU_OUTPUT_TO_VDP
-
-    macro_text_set_color 11
+    macro_text_set_color VDU_COL_BRIGHT_YELLOW
 
     ; Print the ready text
     ld hl, ready_txt
     ld bc, ready_txt_end - ready_txt
     rst.lil VDU_OUTPUT_TO_VDP
+    macro_text_set_color VDU_COL_WHITE
 
     ld bc,origin_left+8
     ld de,origin_top+8
@@ -298,6 +308,11 @@ game_loop:
 
     call game_timer_tick
    
+    call display_1up
+    call display_high_score
+    call display_2up
+    call credit_display
+
     ld hl, animation_counter
     dec (hl)
     jr nz, skip_animation 
@@ -409,14 +424,6 @@ quit:
 
 precredit_placeholder_message:
     .db "Precredit placeholder menu, insert credit with C",13,10,0
-
-one_player_message:
-    .db 31, 27, 20
-    .db "1 PLAYER ONLY",13,10,0
-
-two_player_message:
-    .db 31, 27, 20
-    .db "1 OR 2 PLAYERS",13,10,0
 
 quit_msg:
     .db "Thank you for playing Pac-Man!",13,10,0
