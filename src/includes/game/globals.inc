@@ -35,10 +35,14 @@ character_nickname_heading:
     .db "CHARACTER / NICKNAME",13,10,0
 character_nickname_heading_end:
 
-blinky_name:
+blinky_char_name:
     .db 31, 22, 12
-    .db "-SHADOW       ",147,"BLINKY",148,13,10,0
-blinky_name_end:
+    .db "-SHADOW       ",0
+blinky_char_name_end:
+
+blinky_nick_name:
+    .db 147,"BLINKY",148,13,10,0
+blinky_nick_name_end:
 
 pinky_name:
     .db 31, 22, 15
@@ -64,3 +68,9 @@ power_pellet_points:
     .db 31, 28, 33
     .db "50 PTS",13,10,0
 power_pellet_points_end:
+
+heading_counter: db 60
+
+ghost_counter: db 40
+
+ghost_text_counter: db 40

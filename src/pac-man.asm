@@ -115,6 +115,14 @@ splash_loop:
     bit 2, a
     jp nz, wait_on_credit
 
+    ld hl, splash_counter
+    dec (hl)
+    jr z, wait_on_credit 
+
+    call vdu_vblank
+
+    call vdu_refresh
+
     jp splash_loop
 
 wait_on_credit:
@@ -135,6 +143,24 @@ wait_on_credit:
     ld hl, character_nickname_heading
     call vdu_text_print
 
+heading_wait:
+
+    call game_timer_tick
+
+    ld hl, heading_counter
+    dec (hl)
+    jr z, blinky_wait 
+
+    call vdu_vblank
+
+    call vdu_refresh
+
+    jp heading_wait
+
+blinky_wait:
+
+    call game_timer_tick
+
     ; Blinky
     ld hl, SPRITE_BLINKY_MENU_00
     call vdu_buffer_select
@@ -142,10 +168,86 @@ wait_on_credit:
     ld de, 91
     call vdu_bitmap_plot
 
+    ld hl, ghost_counter
+    dec (hl)
+    jr z, blinky_char_name_wait 
+
+    call vdu_vblank
+
+    call vdu_refresh
+
+    jp blinky_wait
+
+blinky_char_name_wait:
+
+    ; Reset the ghost counter
+    ld a, 40 ;
+    ld hl, ghost_counter
+    ld (hl), a 
+
+    call game_timer_tick
+
+    ld hl, ghost_text_counter
+    dec (hl)
+    jr z, blinky_char_name_show
+
+    call vdu_vblank
+
+    call vdu_refresh
+
+    jp blinky_char_name_wait
+
+blinky_char_name_show:
+
+    ; Reset the ghost text counter
+    ld a, 40 ;
+    ld hl, ghost_text_counter
+    ld (hl), a 
+
     macro_text_set_color VDU_COL_BRIGHT_RED
-    ld hl, blinky_name
+    ld hl, blinky_char_name
     call vdu_text_print
 
+
+blinky_nick_name_wait:
+
+    call game_timer_tick
+
+    ld hl, ghost_text_counter
+    dec (hl)
+    jr z, blinky_nick_name_show
+
+    call vdu_vblank
+
+    call vdu_refresh
+
+    jp blinky_nick_name_wait
+blinky_nick_name_show:
+
+    ; Reset the ghost text counter
+    ld a, 40 ;
+    ld hl, ghost_text_counter
+    ld (hl), a 
+
+    macro_text_set_color VDU_COL_BRIGHT_RED
+    ld hl, blinky_nick_name
+    call vdu_text_print
+
+pinky_wait:
+
+    call game_timer_tick
+
+    ld hl, ghost_counter
+    dec (hl)
+    jr z, pinky_show 
+
+    call vdu_vblank
+
+    call vdu_refresh
+
+    jp pinky_wait
+
+pinky_show:
     ; Pinky
     ld hl, SPRITE_PINKY_MENU_00
     call vdu_buffer_select

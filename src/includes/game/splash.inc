@@ -212,3 +212,5 @@ small_screen:
     macro_stack_pop_all
 
     ret
+
+splash_counter: db 180
