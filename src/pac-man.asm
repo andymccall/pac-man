@@ -127,13 +127,69 @@ wait_on_credit:
     ld bc, vdu_game_data_end - vdu_game_data
     rst.lil VDU_OUTPUT_TO_VDP
 
-    ; Placeholders for the precredit menu
-    ld hl, precredit_placeholder_message
-    call vdu_text_print
-
+    macro_text_set_color VDU_COL_WHITE
     call display_1up
     call display_high_score
     call display_2up
+
+    ld hl, character_nickname_heading
+    call vdu_text_print
+
+    ; Blinky
+    ld a, SPRITE_BLINKY_ID
+    call vdu_sprite_select
+    ld bc, 155
+    ld de, 100
+    call vdu_sprite_move_abs
+    call vdu_sprite_show
+
+    macro_text_set_color VDU_COL_BRIGHT_RED
+    ld hl, shadow_name
+    call vdu_text_print
+
+    ; Pinky
+    ld a, SPRITE_PINKY_ID
+    call vdu_sprite_select
+    ld bc, 155
+    ld de, 124
+    call vdu_sprite_move_abs
+    call vdu_sprite_show
+
+    macro_text_set_color 0x3D
+    ld hl, speedy_name
+    call vdu_text_print
+
+    ; Inky
+    ld a, SPRITE_INKY_ID
+    call vdu_sprite_select
+    ld bc, 155
+    ld de, 148
+    call vdu_sprite_move_abs
+    call vdu_sprite_show
+
+    macro_text_set_color 0x16
+    ;macro_text_set_color 0x3E
+    ld hl, bashful_name
+    call vdu_text_print
+
+    ; Clyde
+    ld a, SPRITE_CLYDE_ID
+    call vdu_sprite_select
+    ld bc, 155
+    ld de, 172
+    call vdu_sprite_move_abs
+    call vdu_sprite_show
+
+    macro_text_set_color 0x36
+    ;macro_text_set_color 0x3F
+    ld hl, pokey_name
+    call vdu_text_print
+
+    macro_text_set_color VDU_COL_WHITE
+    ld hl, trade_and_copy_message
+    call vdu_text_print
+
+    call credit_display
 
 wait_on_credit_loop:
 
@@ -158,6 +214,22 @@ wait_on_credit_loop:
     jp wait_on_credit_loop
 
 player_select:
+
+    ld a, SPRITE_INKY_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+
+    ld a, SPRITE_CLYDE_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+
+    ld a, SPRITE_PINKY_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+
+    ld a, SPRITE_BLINKY_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
 
     ;Clear the screen to get rid of the player select menu
     call vdu_screen_graphics_clear

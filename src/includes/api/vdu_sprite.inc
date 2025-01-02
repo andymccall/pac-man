@@ -34,15 +34,34 @@ vdu_sprite_next_frame:
 @cmd: db 23,27,8
 @end:
 
-; VDU 23, 27, 11: Show current sprite
-; inputs: none
-; prerequisites: vdu_sprite_select
+; Name: vdu_sprite_show
+; Description: Show the currently selected sprite
+; Note: The sprite must be selected prior to calling this command using vdu_sprite_select
+; URL: https://agonconsole8.github.io/agon-docs/vdp/Bitmaps-API/#sprites
+;
+; Inputs: None
+;
 vdu_sprite_show:
     ld hl,@cmd         
     ld bc,@end-@cmd    
     rst.lil $18         
     ret
 @cmd: db 23,27,11
+@end:
+
+; Name: vdu_sprite_hide
+; Description: Hide the currently selected sprite
+; Note: The sprite must be selected prior to calling this command using vdu_sprite_select
+; URL: https://agonconsole8.github.io/agon-docs/vdp/Bitmaps-API/#sprites
+;
+; Inputs: None
+;
+vdu_sprite_hide:
+    ld hl,@cmd         
+    ld bc,@end-@cmd    
+    rst.lil $18         
+    ret
+@cmd: db 23,27,12
 @end:
 
 ; VDU 23, 27, 10, n: Select the nth frame of current sprite
@@ -58,6 +77,13 @@ vdu_sprite_select_frame:
 @frame:  db 0x00
 @end:
 
+; Name: vdu_sprite_move_abs
+; Description: Move the current sprite to an absolute position
+; Note:
+; URL:
+;
+; Inputs: bc is x coordinate, de is y coordinate
+;
 vdu_sprite_move_abs:
     ld (@sprite_x), bc
     ld (@sprite_y), de
