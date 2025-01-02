@@ -136,56 +136,72 @@ wait_on_credit:
     call vdu_text_print
 
     ; Blinky
-    ld a, SPRITE_BLINKY_ID
-    call vdu_sprite_select
+    ld hl, SPRITE_BLINKY_MENU_00
+    call vdu_buffer_select
     ld bc, 155
-    ld de, 100
-    call vdu_sprite_move_abs
-    call vdu_sprite_show
+    ld de, 91
+    call vdu_bitmap_plot
 
     macro_text_set_color VDU_COL_BRIGHT_RED
-    ld hl, shadow_name
+    ld hl, blinky_name
     call vdu_text_print
 
     ; Pinky
-    ld a, SPRITE_PINKY_ID
-    call vdu_sprite_select
+    ld hl, SPRITE_PINKY_MENU_00
+    call vdu_buffer_select
     ld bc, 155
-    ld de, 124
-    call vdu_sprite_move_abs
-    call vdu_sprite_show
+    ld de, 115
+    call vdu_bitmap_plot
 
     macro_text_set_color 0x3D
-    ld hl, speedy_name
+    ld hl, pinky_name
     call vdu_text_print
 
     ; Inky
-    ld a, SPRITE_INKY_ID
-    call vdu_sprite_select
+    ld hl, SPRITE_INKY_MENU_00
+    call vdu_buffer_select
     ld bc, 155
-    ld de, 148
-    call vdu_sprite_move_abs
-    call vdu_sprite_show
+    ld de, 139
+    call vdu_bitmap_plot
 
     macro_text_set_color 0x16
-    ;macro_text_set_color 0x3E
-    ld hl, bashful_name
+    ld hl, inky_name
     call vdu_text_print
 
     ; Clyde
-    ld a, SPRITE_CLYDE_ID
-    call vdu_sprite_select
+    ld hl, SPRITE_CLYDE_MENU_00
+    call vdu_buffer_select
     ld bc, 155
-    ld de, 172
-    call vdu_sprite_move_abs
-    call vdu_sprite_show
+    ld de, 163
+    call vdu_bitmap_plot
 
     macro_text_set_color 0x36
-    ;macro_text_set_color 0x3F
-    ld hl, pokey_name
+    ld hl, clyde_name
     call vdu_text_print
 
+    ; Animation
+
+    ; Pellets
+    ld hl, SPRITE_PELLET_00
+    call vdu_buffer_select
+    ld bc, 207
+    ld de, 247
+    call vdu_bitmap_plot
+
     macro_text_set_color VDU_COL_WHITE
+    ld hl, pellet_points
+    call vdu_text_print
+
+    ld hl, SPRITE_POWER_PELLET_00
+    call vdu_buffer_select
+    ld bc, 207
+    ld de, 264
+    call vdu_bitmap_plot   
+
+    ld hl, power_pellet_points
+    call vdu_text_print
+
+    ; Trade and Copyright Message
     ld hl, trade_and_copy_message
     call vdu_text_print
 
@@ -353,12 +369,18 @@ continue_after_player_select:
     ; Blinky
     ld a, SPRITE_BLINKY_ID
     call vdu_sprite_select
+    ld bc, 250
+    ld de, 152
+    call vdu_sprite_move_abs
     call vdu_sprite_show
 
     ; Pinky
     ld a, SPRITE_PINKY_ID
     call vdu_sprite_select
     call vdu_sprite_next_frame
+    ld bc, 250
+    ld de, 175
+    call vdu_sprite_move_abs
     call vdu_sprite_show
 
     ; Inky
@@ -366,6 +388,9 @@ continue_after_player_select:
     call vdu_sprite_select
     call vdu_sprite_next_frame
     call vdu_sprite_next_frame
+    ld bc, 234
+    ld de, 175
+    call vdu_sprite_move_abs
     call vdu_sprite_show
 
     ; Clyde
@@ -374,6 +399,9 @@ continue_after_player_select:
     call vdu_sprite_next_frame
     call vdu_sprite_next_frame
     call vdu_sprite_next_frame
+    ld bc, 266
+    ld de, 175
+    call vdu_sprite_move_abs
     call vdu_sprite_show
 
 game_loop:

@@ -58,10 +58,6 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_BLINKY_6
     macro_sprite_add_frame SPRITE_BLINKY_7
 
-    ;macro_sprite_activate 2
-
-    macro_sprite_move SPRITE_BLINKY_ID, 250,152
-
     ; Pinky
 
     macro_bitmap_make_buffered SPRITE_PINKY_0, SPRITE_PINKY_WIDTH, SPRITE_PINKY_HEIGHT, "src/assets/ghosts/pinky/pinky_0.rgba2" 
@@ -84,10 +80,6 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_PINKY_5
     macro_sprite_add_frame SPRITE_PINKY_6
     macro_sprite_add_frame SPRITE_PINKY_7
-
-    ;macro_sprite_activate 3
-
-    macro_sprite_move SPRITE_PINKY_ID, 250,175
 
     ; Inky
 
@@ -112,10 +104,6 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_INKY_6
     macro_sprite_add_frame SPRITE_INKY_7
 
-    ;macro_sprite_activate 4
-
-    macro_sprite_move SPRITE_INKY_ID, 234,175
-
     ; Clyde
 
     macro_bitmap_make_buffered SPRITE_CLYDE_0, SPRITE_CLYDE_WIDTH, SPRITE_CLYDE_HEIGHT, "src/assets/ghosts/clyde/clyde_0.rgba2" 
@@ -138,10 +126,6 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_CLYDE_5
     macro_sprite_add_frame SPRITE_CLYDE_6
     macro_sprite_add_frame SPRITE_CLYDE_7
-
-    ;macro_sprite_activate 5
-
-    macro_sprite_move SPRITE_CLYDE_ID, 266,175
 
     ; Reverse
 
@@ -320,5 +304,11 @@ vdu_game_data:
     macro_bitmap_make_buffered SPRITE_NULL_PELLET_00, SPRITE_PELLET_TILE_WIDTH, SPRITE_PELLET_TILE_HEIGHT, "src/assets/pellet/null_pellet_00.rgba2"
     macro_bitmap_make_buffered SPRITE_PELLET_00, SPRITE_PELLET_TILE_WIDTH, SPRITE_PELLET_TILE_HEIGHT, "src/assets/pellet/pellet_00.rgba2"
     macro_bitmap_make_buffered SPRITE_POWER_PELLET_00, SPRITE_PELLET_TILE_WIDTH, SPRITE_PELLET_TILE_HEIGHT, "src/assets/pellet/power_pellet_00.rgba2"
+
+    ; Menu Ghosts
+    macro_bitmap_make_buffered SPRITE_BLINKY_MENU_00, SPRITE_BLINKY_WIDTH, SPRITE_BLINKY_HEIGHT, "src/assets/ghosts/blinky/blinky_0.rgba2"
+    macro_bitmap_make_buffered SPRITE_PINKY_MENU_00, SPRITE_PINKY_WIDTH, SPRITE_PINKY_HEIGHT, "src/assets/ghosts/pinky/pinky_0.rgba2"
+    macro_bitmap_make_buffered SPRITE_INKY_MENU_00, SPRITE_INKY_WIDTH, SPRITE_INKY_HEIGHT, "src/assets/ghosts/inky/inky_0.rgba2"
+    macro_bitmap_make_buffered SPRITE_CLYDE_MENU_00, SPRITE_CLYDE_WIDTH, SPRITE_CLYDE_HEIGHT, "src/assets/ghosts/clyde/clyde_0.rgba2"
 
 vdu_game_data_end:
