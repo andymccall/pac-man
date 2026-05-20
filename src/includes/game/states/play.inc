@@ -14,6 +14,15 @@ state_play_animation_period:  equ 10
 state_play_normal_anim_phase: db 0       ; 0..7 — cycles through normal frames
 state_play_fright_anim_phase: db 0       ; 0..3 — low bit = wiggle, high bit = blue/white
 
+; Eaten-ghost freeze. When Pac eats a frightened ghost, the arcade pauses
+; the screen for ~1 s with only the score popup visible. Movement, ghost
+; AI, the mode timer, and the fright timer are all frozen — that last
+; one is what stops a long chain from eating into the fright timer.
+; ghost_eat sets the timer and hides Pac + the eaten ghost; state_play_tick
+; counts it down and restores visibility on expiry.
+EAT_FREEZE_DURATION:        equ 60
+state_play_eat_freeze_timer: db 0
+
 ; ready_clear_txt — six spaces at the same VDU cursor position as
 ; ready_txt in pac-man.asm. Overwrites the "READY!" string when we leave
 ; the READY state.
@@ -28,6 +37,11 @@ state_play_enter:
     ld (power_pellet_visible), a
     ld a, POWER_PELLET_BLINK_PERIOD
     ld (power_pellet_blink_counter), a
+
+    ; Make sure we don't enter PLAY mid-freeze (e.g. eaten-ghost freeze
+    ; carried over via DYING → READY → PLAY if Pac dies during fright).
+    xor a
+    ld (state_play_eat_freeze_timer), a
 
     ; Erase the READY! banner left over from state_ready_enter by
     ; plotting an opaque-black rectangle over it.
@@ -49,6 +63,21 @@ state_play_tick:
     call power_pellets_blink_tick
     call fruit_tick
     call fruit_collision_check
+
+    ; Eaten-ghost freeze: hold movement, ghost AI, mode timer, and fright
+    ; timer for EAT_FREEZE_DURATION frames after ghost_eat fires. HUD and
+    ; the score-popup countdown above are kept ticking so the freeze
+    ; doesn't look like a hang.
+    call score_popup_tick
+    ld a, (state_play_eat_freeze_timer)
+    or a
+    jr z, @no_eat_freeze
+    dec a
+    ld (state_play_eat_freeze_timer), a
+    ret nz                              ; still frozen
+    ; Just expired — bring Pac and any eyes-mode ghosts back on screen.
+    call state_play_eat_freeze_restore
+@no_eat_freeze:
 
     ; Cycle ghost frames every N ticks. Advance the appropriate phase
     ; (normal or fright) then call ghosts_animate, which picks the right
@@ -102,3 +131,29 @@ state_play_tick:
     ret nz
     ld a, GS_DYING
     jp game_state_set
+
+; state_play_eat_freeze_restore — called once when the eaten-ghost freeze
+; expires. Re-shows Pac and any eyes-mode ghosts (the eaten one was
+; hidden by ghost_eat; if Pac chained more than one during the same
+; freeze window, the timer just gets re-armed and they all stay hidden
+; until the last one expires).
+; Destroys: af
+state_play_eat_freeze_restore:
+    ld a, SPRITE_PAC_MAN_ID
+    call vdu_sprite_select
+    call vdu_sprite_show
+    ld ix, blinky_state
+    call @show_if_eyes
+    ld ix, pinky_state
+    call @show_if_eyes
+    ld ix, inky_state
+    call @show_if_eyes
+    ld ix, clyde_state
+@show_if_eyes:
+    ld a, (ix + GS_EATEN)
+    or a
+    ret z                               ; not eyes — was visible the whole time
+    ld a, (ix + GS_ID)
+    inc a
+    call vdu_sprite_select
+    jp vdu_sprite_show
