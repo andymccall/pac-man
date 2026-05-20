@@ -17,10 +17,6 @@ state_play_fright_anim_phase: db 0       ; 0..3 — low bit = wiggle, high bit =
 ; ready_clear_txt — six spaces at the same VDU cursor position as
 ; ready_txt in pac-man.asm. Overwrites the "READY!" string when we leave
 ; the READY state.
-ready_clear_txt:
-    .db     31, 30, 26
-    .db     "      "
-ready_clear_txt_end:
 
 state_play_enter:
     ld a, state_play_animation_period
@@ -33,10 +29,13 @@ state_play_enter:
     ld a, POWER_PELLET_BLINK_PERIOD
     ld (power_pellet_blink_counter), a
 
-    ; Erase the READY! banner left over from state_ready_enter.
-    ld hl, ready_clear_txt
-    ld bc, ready_clear_txt_end - ready_clear_txt
-    rst.lil VDU_OUTPUT_TO_VDP
+    ; Erase the READY! banner left over from state_ready_enter by
+    ; plotting an opaque-black rectangle over it.
+    ld hl, BANNER_READY_ERASE
+    call vdu_buffer_select
+    ld bc, BANNER_READY_REL_X
+    ld de, BANNER_REL_Y
+    call vdu_bitmap_plot
     ret
 
 state_play_tick:

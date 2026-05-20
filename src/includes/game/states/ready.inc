@@ -5,12 +5,6 @@ state_ready_timer: db 120     ; ~2 sec at 60 fps
 state_ready_enter:
     call vdu_screen_graphics_clear
 
-    macro_text_set_color VDU_COL_BRIGHT_YELLOW
-    ld hl, ready_txt
-    ld bc, ready_txt_end - ready_txt
-    rst.lil VDU_OUTPUT_TO_VDP
-    macro_text_set_color VDU_COL_WHITE
-
     ld bc, origin_left + 8
     ld de, origin_top + 8
     call vdu_set_gfx_origin
@@ -25,6 +19,15 @@ state_ready_enter:
     ld bc, origin_left
     ld de, origin_top
     call vdu_set_gfx_origin
+
+    ; Plot the READY! banner as a pre-rendered yellow bitmap. Lets us
+    ; position it per-pixel so it sits cleanly in maze row 17 (the open
+    ; lane below the pen) rather than overlapping a wall row.
+    ld hl, BANNER_READY
+    call vdu_buffer_select
+    ld bc, BANNER_READY_REL_X
+    ld de, BANNER_REL_Y
+    call vdu_bitmap_plot
 
     ; Lives HUD: re-blit so post-death decrements show.
     call lives_display

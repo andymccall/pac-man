@@ -27,10 +27,13 @@ state_game_over_enter:
     call vdu_sprite_select
     call vdu_sprite_hide
 
-    macro_text_set_color VDU_COL_BRIGHT_RED
-    ld hl, game_over_txt
-    call vdu_text_print
-    macro_text_set_color VDU_COL_WHITE
+    ; Plot GAME OVER as a pre-rendered red bitmap so it sits per-pixel
+    ; in maze row 17 (same vertical position as READY!).
+    ld hl, BANNER_GAME_OVER
+    call vdu_buffer_select
+    ld bc, BANNER_GAME_OVER_REL_X
+    ld de, BANNER_REL_Y
+    call vdu_bitmap_plot
 
     ld hl, 180
     ld (state_game_over_timer), hl
@@ -61,7 +64,3 @@ state_game_over_tick:
     ld a, GS_ATTRACT_CHARS
     jp game_state_set
 
-game_over_txt:
-    .db     31, 27, 26
-    .db     "GAME OVER", 0
-game_over_txt_end:
