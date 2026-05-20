@@ -95,6 +95,8 @@ state_player_select_tick:
     ret z
     dec a
     ld (credit), a
+    ld a, 1
+    ld (current_level), a
     call lives_init
     call fruit_init
     call level_init
@@ -109,6 +111,8 @@ state_player_select_tick:
     ld a, (credit)
     sub 2
     ld (credit), a
+    ld a, 1
+    ld (current_level), a
     call lives_init
     call fruit_init
     call level_init

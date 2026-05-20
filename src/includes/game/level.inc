@@ -1,16 +1,22 @@
-; Per-level reset. Restores the mutable pellet map from its read-only
-; template (so a 2nd game / new level doesn't inherit half-eaten state
-; from the previous one) and zeroes the per-level pellet counter that
-; drives ghost-house release timing and fruit spawns.
+; Level state and per-level reset.
 ;
-; Called from state_player_select_tick when a new game starts. The
-; existing lives_init / fruit_init / score-reset stay where they are —
-; level_init covers only the maze-cell state that pellet_eat mutates.
-;
-; Eventually a level-progression flow will call this too when advancing
-; to the next level.
+; level_init restores the mutable pellet map from its read-only template
+; (so a 2nd game / new level doesn't inherit half-eaten state from the
+; previous one) and zeroes the per-level pellet counter that drives
+; ghost-house release timing and fruit spawns. Called from:
+;   * state_player_select on a new game (alongside lives_init / fruit_init)
+;   * state_level_clear when advancing to the next level
 
-MAZE_PELLETS_CELLS: equ 28 * 31         ; 868 bytes
+MAZE_PELLETS_CELLS:  equ 28 * 31          ; 868 bytes
+MAZE_TOTAL_PELLETS:  equ 244              ; 240 dots + 4 energisers — used
+                                          ; by state_play_tick to detect a
+                                          ; cleared maze. Matches the arcade.
+
+; current_level — 1-indexed. Reset to 1 by state_player_select on a new
+; game; incremented by state_level_clear when the maze is cleared. Will
+; eventually drive per-level scatter/chase timings (#16), Pac speed
+; (#22), fruit type (#24), and cruise Elroy (#17).
+current_level: db 1
 
 ; level_init — copy maze_pellets_template → maze_pellets_map and reset
 ; pellets_eaten_level.
