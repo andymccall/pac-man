@@ -1,0 +1,94 @@
+; GS_READY — draw maze, place sprites, hold for ~2 seconds, then to PLAY.
+
+state_ready_timer: db 120     ; ~2 sec at 60 fps
+
+state_ready_enter:
+    call vdu_screen_graphics_clear
+
+    macro_text_set_color VDU_COL_BRIGHT_YELLOW
+    ld hl, ready_txt
+    ld bc, ready_txt_end - ready_txt
+    rst.lil VDU_OUTPUT_TO_VDP
+    macro_text_set_color VDU_COL_WHITE
+
+    ld bc, origin_left + 8
+    ld de, origin_top + 8
+    call vdu_set_gfx_origin
+
+    ld ix, maze_wall
+    ld hl, SPRITE_MAZE_TILE_00
+    call draw_maze
+    ld ix, maze_pellets
+    ld hl, SPRITE_NULL_PELLET_00
+    call draw_maze
+
+    ld bc, origin_left
+    ld de, origin_top
+    call vdu_set_gfx_origin
+
+    ; Lives HUD: re-blit so post-death decrements show.
+    call lives_display
+
+    ; Reset Pac-Man.
+    ; Order matters: vdu_sprite_select clobbers BC (and rst.lil $18 likely
+    ; clobbers DE), so select first, then load coordinates fresh into BC/DE
+    ; for vdu_sprite_move_abs.
+    ld a, SPRITE_PAC_MAN_ID
+    call vdu_sprite_select
+    ld bc, 250
+    ld (sprite_x), bc
+    ld de, 248
+    ld (sprite_y), de
+    call vdu_sprite_move_abs
+    call vdu_sprite_show
+    call pac_reset
+
+    ; Hide any fruit left over from the previous life (the appearance
+    ; counter is preserved so we don't re-trigger 70/170 thresholds).
+    call fruit_hide_now
+
+    ; Ghosts: ghost_ai_init resets the AI state AND moves each sprite to
+    ; its start position. We just need to make sure each one is visible.
+    ; Per-ghost vdu_sprite_next_frame calls stagger the animation frames
+    ; so they're not all in lock-step.
+    call ghost_ai_init
+
+    ld a, SPRITE_BLINKY_ID
+    call vdu_sprite_select
+    call vdu_sprite_show
+
+    ld a, SPRITE_PINKY_ID
+    call vdu_sprite_select
+    call vdu_sprite_next_frame
+    call vdu_sprite_show
+
+    ld a, SPRITE_INKY_ID
+    call vdu_sprite_select
+    call vdu_sprite_next_frame
+    call vdu_sprite_next_frame
+    call vdu_sprite_show
+
+    ld a, SPRITE_CLYDE_ID
+    call vdu_sprite_select
+    call vdu_sprite_next_frame
+    call vdu_sprite_next_frame
+    call vdu_sprite_next_frame
+    call vdu_sprite_show
+
+    ld a, 120
+    ld (state_ready_timer), a
+    ret
+
+state_ready_tick:
+    call display_1up
+    call display_high_score
+    call display_2up
+    call credit_display
+    macro_text_set_color VDU_COL_WHITE
+    call display_player_1_score
+
+    ld hl, state_ready_timer
+    dec (hl)
+    ret nz
+    ld a, GS_PLAY
+    jp game_state_set

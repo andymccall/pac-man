@@ -20,14 +20,17 @@ two_player_message_end:
 
 bonus_message:
     .db 31, 19, 30
-    .db "BONUS PAC-MAN FOR 10000 PTS",13,10,0
+    .db "BONUS PAC-MAN FOR 10000 ",$F0,$F1,$F2,13,10,0
 bonus_message_end:
 
+; "© 1980 MIDWAY MFG. CO." (22 chars incl. ©) and
+; "AGON REMAKE BY BITRIOT" (22 chars), both centred on the 64-col grid
+; (start col = (64 - 22) / 2 = 21).
 trade_and_copy_message:
-    .db 31, 24, 37
-    .db "PAC-MAN",153," & ",169,"BNEI",13,10
+    .db 31, 21, 37
+    .db 169," 1980 MIDWAY MFG. CO.",13,10
     .db 31, 21, 38
-    .db "Agon remake by Bitriot",0
+    .db "AGON REMAKE BY BITRIOT",0
 trade_and_copy_message_end:
 
 character_nickname_heading:
@@ -59,14 +62,21 @@ clyde_name:
     .db "-POKEY        ",147,"CLYDE",148,13,10,0
 clyde_name_end:
 
+; Small p/t/s glyphs extracted from sprite-sheet font block (row 3 cols
+; 1-3 in my coord system; user's (col 1, rows 2-4)) live at custom font
+; positions 0xF0/F1/F2 — see font.inc for the upload.
+;
+; Start col 29 puts the "0" of "10"/"50" directly above the "D" of
+; "MIDWAY" in the copyright line (which starts at col 21 with "©",
+; "D" lands at col 30).
 pellet_points:
-    .db 31, 28, 31
-    .db "10 PTS",13,10,0
+    .db 31, 29, 31
+    .db "10 ",$F0,$F1,$F2,13,10,0
 pellet_points_end:
 
 power_pellet_points:
-    .db 31, 28, 33
-    .db "50 PTS",13,10,0
+    .db 31, 29, 33
+    .db "50 ",$F0,$F1,$F2,13,10,0
 power_pellet_points_end:
 
 heading_counter: db 60

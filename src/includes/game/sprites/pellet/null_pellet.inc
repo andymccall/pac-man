@@ -1,1 +1,2 @@
 SPRITE_NULL_PELLET_00:          equ 440
+SPRITE_ERASE_PELLET_00:         equ 443
