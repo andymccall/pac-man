@@ -50,10 +50,16 @@ state_ready_enter:
     ; counter is preserved so we don't re-trigger 70/170 thresholds).
     call fruit_hide_now
 
-    ; Ghosts: ghost_ai_init resets the AI state AND moves each sprite to
-    ; its start position. We just need to make sure each one is visible.
-    ; Per-ghost vdu_sprite_next_frame calls stagger the animation frames
-    ; so they're not all in lock-step.
+    ; Ghosts: ghost_ai_init resets the AI state, moves each sprite to
+    ; its start position, AND tail-calls ghosts_animate which already
+    ; sets each ghost to a per-ghost-staggered frame (Blinky +0, Pinky
+    ; +1, Inky +2, Clyde +3) inside the normal 0-7 range. So we just
+    ; need to make each sprite visible.
+    ;
+    ; (Earlier versions called vdu_sprite_next_frame here for staggering,
+    ; but those wrapped at 16 not 8 — and 16 is the full frame list
+    ; including blue/white-flash/eyes — so dying without a power pellet
+    ; could push Inky/Clyde into the blue or eyes range. See #4.)
     call ghost_ai_init
 
     ld a, SPRITE_BLINKY_ID
@@ -62,20 +68,14 @@ state_ready_enter:
 
     ld a, SPRITE_PINKY_ID
     call vdu_sprite_select
-    call vdu_sprite_next_frame
     call vdu_sprite_show
 
     ld a, SPRITE_INKY_ID
     call vdu_sprite_select
-    call vdu_sprite_next_frame
-    call vdu_sprite_next_frame
     call vdu_sprite_show
 
     ld a, SPRITE_CLYDE_ID
     call vdu_sprite_select
-    call vdu_sprite_next_frame
-    call vdu_sprite_next_frame
-    call vdu_sprite_next_frame
     call vdu_sprite_show
 
     ld a, 120
