@@ -71,6 +71,10 @@ ghost_speed:        equ 192    ; 75% of Pac's 1 px/frame (arcade level-1)
 ghost_speed_fright: equ 96     ; ~37% — fleeing ghosts move much slower
 ghost_speed_house:  equ 128    ; ~50% — bobbing/exiting is slower
 ghost_speed_eyes:   equ 240    ; ~94% — eyes hustle back to the pen
+ghost_speed_tunnel: equ 102    ; ~40% — arcade rule: ghosts slow on the
+                               ; tunnel row. Pac is unaffected. Eaten ghosts
+                               ; (eyes) also unaffected — they take the
+                               ; @speed_eyes branch before this check.
 FRIGHT_DURATION:        equ 360    ; 6 s @ 60 fps
 FRIGHT_FLASH_THRESHOLD: equ 120    ; final 2 s — alternate blue/white
 
@@ -1411,11 +1415,22 @@ ghost_tick:
     ld b, ghost_speed
     ld a, (ix + GS_POST_EATEN)
     or a
-    jr nz, @speed_ready                 ; immune from fright slow-down
+    jr nz, @house_out_tunnel_check      ; immune from fright slow-down
     ld a, (fright_active)
     or a
-    jr z, @speed_ready
+    jr z, @house_out_tunnel_check
     ld b, ghost_speed_fright
+@house_out_tunnel_check:
+    ; Tunnel slow-down: HOUSE_OUT ghosts on the tunnel row drop to ~40%.
+    ; If current speed is already <= tunnel speed (e.g. fright at 37%),
+    ; we don't speed them up — the slower speed wins.
+    ld a, ghost_speed_tunnel
+    cp b
+    jr nc, @speed_ready                 ; tunnel >= B, no clamp needed
+    ld de, (ix + GS_Y)
+    call pac_on_tunnel_row
+    jr nz, @speed_ready                 ; not on the tunnel row
+    ld b, ghost_speed_tunnel
     jr @speed_ready
 @speed_house:
     ld b, ghost_speed_house
