@@ -4,17 +4,17 @@ SPRITE_COUNT:   equ 15
 
 
 push_start_data:
-    .db     31, 24, 15
+    .db     31, 24, 20
     .db     "PUSH START BUTTON", 13, 10, 0
 push_start_data_end:
 
 one_player_message:
-    .db 31, 26, 20
+    .db 31, 26, 25
     .db "1 PLAYER ONLY",13,10,0
 one_player_message_end:
 
 two_player_message:
-    .db 31, 26, 20
+    .db 31, 26, 25
     .db "1 OR 2 PLAYERS",13,10,0
 two_player_message_end:
 
@@ -47,20 +47,36 @@ blinky_nick_name:
     .db 147,"BLINKY",148,13,10,0
 blinky_nick_name_end:
 
-pinky_name:
+; Per-ghost character name (-CHARNAME) and nickname (bracketed name).
+; The char-name string positions the cursor with VDU 31 then writes the
+; name plus padding spaces, so the cursor lands at col 36 ready for the
+; nickname write — matches the blinky_char_name / blinky_nick_name pair.
+pinky_char_name:
     .db 31, 22, 15
-    .db "-SPEEDY       ",147,"PINKY",148,13,10,0
-pinky_name_end:
+    .db "-SPEEDY       ",0
+pinky_char_name_end:
 
-inky_name:
+pinky_nick_name:
+    .db 147,"PINKY",148,13,10,0
+pinky_nick_name_end:
+
+inky_char_name:
     .db 31, 22, 18
-    .db "-BASHFUL      ",147,"INKY",148,13,10,0
-inky_name_end:
+    .db "-BASHFUL      ",0
+inky_char_name_end:
 
-clyde_name:
+inky_nick_name:
+    .db 147,"INKY",148,13,10,0
+inky_nick_name_end:
+
+clyde_char_name:
     .db 31, 22, 21
-    .db "-POKEY        ",147,"CLYDE",148,13,10,0
-clyde_name_end:
+    .db "-POKEY        ",0
+clyde_char_name_end:
+
+clyde_nick_name:
+    .db 147,"CLYDE",148,13,10,0
+clyde_nick_name_end:
 
 ; Small p/t/s glyphs extracted from sprite-sheet font block (row 3 cols
 ; 1-3 in my coord system; user's (col 1, rows 2-4)) live at custom font
