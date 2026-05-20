@@ -1,0 +1,19 @@
+# Keep the Docker build context small. The toolchain image only needs
+# the Dockerfile itself; build artifacts, reference data, and editor
+# state would just bloat the upload to the daemon.
+
+bin/
+release/
+reference/
+.claude/
+.git/
+.github/
+*.bin
+*.zip
+*.map
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

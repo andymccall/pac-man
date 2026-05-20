@@ -1,0 +1,46 @@
+# GitHub Actions workflow: lint pass for workflow YAMLs (#8).
+#
+# actionlint catches GHA-specific bugs in .github/workflows/*.yml —
+# matrix typos, deprecated syntax, shell-in-yaml issues, dangling
+# context refs. Way more strict than the ad-hoc "does the workflow
+# run" smoke test.
+
+name: 🔎 Lint
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch.
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  actionlint:
+    name: 🔎 actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📦 Checkout source
+        uses: actions/checkout@v6
+
+      - name: ⬇️  Install actionlint
+        # Official downloader script from the actionlint repo. Pins
+        # to whatever the upstream `main` branch ships at run time;
+        # if we ever want a fixed version we can pass a tag arg.
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) > /tmp/actionlint-install.log
+          sudo mv ./actionlint /usr/local/bin/actionlint
+          actionlint -version
+
+      - name: 🔎 Run actionlint
+        run: actionlint -color

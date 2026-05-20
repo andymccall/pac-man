@@ -1,0 +1,184 @@
+# GitHub Actions workflow: per-PR build-size delta comment (#8).
+#
+# Builds both sides of the PR (HEAD + base ref), measures bin/pac-man.bin
+# on each, and posts (or updates) a markdown comment on the PR showing
+# the byte delta.
+#
+# The comment is upserted (matched on a hidden HTML marker) so a rapid
+# push doesn't spam the PR with new comments — one comment per PR,
+# always reflecting the latest push.
+#
+# The Docker layer cache (cache-from / cache-to: type=gha) is shared
+# with build.yml so the toolchain image build is near-free here on
+# warm cache.
+
+name: 📐 Build size delta
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+# Cancel superseded runs on the same PR so a rapid push doesn't queue
+# stale builds.
+concurrency:
+  group: size-delta-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+# pull-requests: write — needed for the github-script step to post
+# (or update) the PR comment.
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  delta:
+    name: 📐 Compute and post size delta
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout HEAD
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: head
+
+      - name: 📦 Checkout base
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: 🔨 Build toolchain image (from HEAD's Dockerfile)
+        uses: docker/build-push-action@v7
+        with:
+          # Use HEAD's Dockerfile — if a PR also changes the toolchain
+          # we want to measure under the PR's own image, not main's.
+          context: head
+          file: head/Dockerfile
+          load: true
+          tags: pac-man-builder:size-delta
+          # Shared GHA cache with build.yml + docker.yml so we don't
+          # pay the full build cost in the common case.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🎮 Build HEAD
+        working-directory: head
+        run: |
+          docker run --rm \
+            -v "${PWD}:/work" \
+            -w /work \
+            --user "$(id -u):$(id -g)" \
+            pac-man-builder:size-delta \
+            make
+
+      - name: 🎮 Build base
+        working-directory: base
+        run: |
+          # Use the SAME image (built from HEAD's Dockerfile) for both
+          # sides. If main pre-dates the Dockerfile we still use HEAD's
+          # so the toolchain difference doesn't show up as a phantom
+          # size delta. If main pre-dates the Makefile / source layout
+          # the build will fail, which is informative.
+          docker run --rm \
+            -v "${PWD}:/work" \
+            -w /work \
+            --user "$(id -u):$(id -g)" \
+            pac-man-builder:size-delta \
+            make || true
+
+      - name: 📐 Compute delta
+        id: delta
+        run: |
+          HEAD_LABEL="${GITHUB_HEAD_REF}@${GITHUB_SHA:0:7}"
+          BASE_LABEL="${GITHUB_BASE_REF}"
+
+          if [ ! -f head/bin/pac-man.bin ]; then
+            echo "HEAD build missing — failing." >&2
+            exit 1
+          fi
+
+          head_size=$(stat -c %s head/bin/pac-man.bin)
+          if [ -f base/bin/pac-man.bin ]; then
+            base_size=$(stat -c %s base/bin/pac-man.bin)
+            delta=$((head_size - base_size))
+          else
+            base_size="—"
+            delta=""
+          fi
+
+          # Format delta with a sign and an arrow icon.
+          if [ -z "${delta}" ]; then
+            delta_str="_(no baseline)_"
+          elif [ "${delta}" -gt 0 ]; then
+            delta_str="🔺 +${delta} bytes"
+          elif [ "${delta}" -lt 0 ]; then
+            delta_str="🔻 ${delta} bytes"
+          else
+            delta_str="⚪ no change"
+          fi
+
+          {
+            echo "<!-- size-delta -->"
+            echo "## 📐 Build size delta"
+            echo ""
+            echo "| | Size (bytes) |"
+            echo "|---|---:|"
+            printf "| Base (\`%s\`) | %s |\n" "${BASE_LABEL}" "${base_size}"
+            printf "| HEAD (\`%s\`) | %s |\n" "${HEAD_LABEL}" "${head_size}"
+            printf "| **Delta** | **%s** |\n" "${delta_str}"
+            echo ""
+            echo "_Measured on \`bin/pac-man.bin\` produced by the toolchain image built from this PR's \`Dockerfile\`._"
+          } > /tmp/comment.md
+
+          # Body to a step output via heredoc so the github-script
+          # step can read it from env.
+          {
+            echo "body<<EOF_DELTA_BODY"
+            cat /tmp/comment.md
+            echo "EOF_DELTA_BODY"
+          } >> "$GITHUB_OUTPUT"
+
+          # Also dump to the run summary so the table shows even when
+          # nobody opens the PR comment.
+          cat /tmp/comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 💬 Post or update PR comment
+        uses: actions/github-script@v9
+        env:
+          DELTA_BODY: ${{ steps.delta.outputs.body }}
+        with:
+          script: |
+            // Upsert pattern: find the existing comment (if any) by
+            // its hidden HTML marker, then update or create. Avoids
+            // comment spam on rapid pushes.
+            const marker = '<!-- size-delta -->';
+            const body = process.env.DELTA_BODY;
+            const issue_number = context.payload.pull_request.number;
+            const { owner, repo } = context.repo;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body && c.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id, body,
+              });
+              core.info(`Updated existing size-delta comment #${existing.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number, body,
+              });
+              core.info('Posted fresh size-delta comment.');
+            }

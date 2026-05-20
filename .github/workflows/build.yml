@@ -1,0 +1,87 @@
+# GitHub Actions workflow: build pac-man.bin (#8). Builds the toolchain
+# image inline (cached via GHA) then runs `make` inside it, uploading
+# the resulting Agon Light 2 binary as an artifact.
+#
+# Self-contained: does NOT depend on docker.yml having pushed an image
+# to ghcr.io. The two workflows share the same Dockerfile + the same
+# GHA layer cache. docker.yml's job is to PUBLISH the image for off-CI
+# consumers (devcontainers, downstream forks).
+
+name: 🎮 Build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch so a rapid push doesn't
+# fan out into a queue of stale builds.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+# Opt into Node.js 24 for all JavaScript actions (checkout, upload-
+# artifact, etc.) ahead of the June 2026 forced upgrade. Removes the
+# `Node.js 20 actions are deprecated` warning. When upstream actions
+# ship v5+ that natively run on Node 24, this var becomes a no-op.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build:
+    name: 💡 Build Agon Light 2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout source
+        uses: actions/checkout@v6
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: 🔨 Build toolchain image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          # load: true puts the built image into the local docker
+          # daemon under the given tag, ready for `docker run` below.
+          # No push — docker.yml owns the registry side.
+          load: true
+          tags: pac-man-builder:ci
+          # GHA cache shared across runs + with docker.yml / release.yml
+          # / size-delta.yml. First job pays the build cost; subsequent
+          # runs hit the cache.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🎮 Build pac-man.bin
+        run: |
+          docker run --rm \
+            -v "${PWD}:/work" \
+            -w /work \
+            --user "$(id -u):$(id -g)" \
+            pac-man-builder:ci \
+            make
+
+      - name: 📐 Report binary size
+        run: |
+          size=$(stat -c %s bin/pac-man.bin)
+          size_kb=$(( (size + 1023) / 1024 ))
+          {
+            echo "## 💡 Agon Light 2 build"
+            echo ""
+            echo "| File | Bytes | KB |"
+            echo "|---|---:|---:|"
+            printf "| \`bin/pac-man.bin\` | %s | %s |\n" "${size}" "${size_kb}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 📤 Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pac-man-agon
+          path: bin/pac-man.bin
+          if-no-files-found: error
+          retention-days: 14
