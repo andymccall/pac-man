@@ -303,7 +303,6 @@ ghost_ai_init:
 ghost_ai_tick:
     call ghost_mode_tick
     call fright_tick
-    call score_popup_tick
 
     ld ix, blinky_state
     call ghost_tick
@@ -485,7 +484,8 @@ ghost_eat:
     xor a
     ld (ix + GS_SUBPIXEL), a           ; clean accumulator for eyes movement
 
-    ; Snap sprite to eyes frame.
+    ; Snap sprite to eyes frame (so when the freeze ends and we re-show
+    ; the ghost, it comes back as eyes facing the last travel direction).
     ld a, (ix + GS_DIR)
     call ghost_eyes_frame_for_dir       ; returns frame index in A
     ld (@eat_frame), a
@@ -494,6 +494,16 @@ ghost_eat:
     call vdu_sprite_select
     ld a, (@eat_frame)
     call vdu_sprite_select_frame
+
+    ; Arcade eaten-ghost freeze. Hide Pac and the eaten ghost so the
+    ; score popup is alone on screen, and start the freeze timer that
+    ; state_play_tick uses to pause movement / AI / mode + fright timers.
+    call vdu_sprite_hide                ; hide eaten ghost (still selected)
+    ld a, SPRITE_PAC_MAN_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+    ld a, EAT_FREEZE_DURATION
+    ld (state_play_eat_freeze_timer), a
 
     ; points = 200 << fright_eaten_count   (200, 400, 800, 1600)
     ld a, (fright_eaten_count)
