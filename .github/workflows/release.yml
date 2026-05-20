@@ -1,0 +1,142 @@
+# GitHub Actions workflow: tag-driven release (#8). Pushes a `v*` tag,
+# CI builds pac-man.bin inside the toolchain container, bundles a zip
+# with the binary + a README, and publishes a GitHub Release.
+#
+# Trigger:
+#   git tag v1.0.0 && git push --tags
+#
+# Tag conventions:
+#   v1.0.0          stable release
+#   v1.0.0-rc.1     release candidate (auto-marked as pre-release)
+#   v1.0.0-beta.1   beta             (auto-marked as pre-release)
+#
+# The release notes pull from commits since the previous tag (via
+# GitHub's auto-generation feature). The binary size is included in
+# the release body so users can sanity-check what they're downloading.
+
+name: 🚀 Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Need contents: write to create the GitHub Release.
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  release:
+    name: 🚀 Build + publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📦 Checkout source
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0    # full tag history for any version-stamping later
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: 🔨 Build toolchain image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: Dockerfile
+          load: true
+          tags: pac-man-builder:release
+          # Shared cache with build.yml + docker.yml + size-delta.yml so
+          # this is near-free on warm cache.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🎮 Build pac-man.bin
+        run: |
+          docker run --rm \
+            -v "${PWD}:/work" \
+            -w /work \
+            --user "$(id -u):$(id -g)" \
+            pac-man-builder:release \
+            make
+
+      - name: 📦 Bundle release zip
+        id: bundle
+        run: |
+          set -e
+          TAG="${GITHUB_REF_NAME}"
+          BUNDLE="pac-man-${TAG}-agon"
+          mkdir -p "release/${BUNDLE}"
+          cp bin/pac-man.bin "release/${BUNDLE}/"
+          cat > "release/${BUNDLE}/README.txt" <<EOF
+          Pac-Man (Agon Light 2 port)
+          Version: ${TAG}
+
+          Single-file binary. Copy pac-man.bin onto the Agon's SD card
+          (e.g. into /mos/), then at the MOS prompt:
+
+              run pac-man.bin
+
+          Or load it under the fab-agon-emulator:
+
+              fab-agon-emulator --sdcard ./ --vdp vdp_console8.so
+
+          See the project README for emulator setup details:
+            https://github.com/${GITHUB_REPOSITORY}
+
+          (C) 1980 MIDWAY MFG. CO. — Agon remake by bitriot.
+          EOF
+          (cd release && zip -qr "${BUNDLE}.zip" "${BUNDLE}")
+
+          size=$(stat -c %s "release/${BUNDLE}.zip")
+          size_kb=$(( (size + 1023) / 1024 ))
+          bin_size=$(stat -c %s bin/pac-man.bin)
+          bin_kb=$(( (bin_size + 1023) / 1024 ))
+
+          # Emit a markdown size table both for the run summary AND for
+          # splicing into the release body.
+          {
+            echo "## 🚀 Release \`${TAG}\`"
+            echo ""
+            echo "| Item | Size |"
+            echo "|---|---:|"
+            printf "| \`bin/pac-man.bin\`      | %s bytes (%s KB) |\n" "${bin_size}" "${bin_kb}"
+            printf "| \`%s.zip\` | %s bytes (%s KB) |\n" "${BUNDLE}" "${size}" "${size_kb}"
+          } > /tmp/sizes.md
+          cat /tmp/sizes.md >> "$GITHUB_STEP_SUMMARY"
+
+          # Detect pre-release tags (rc / beta / alpha) so the next
+          # step can mark the GitHub Release accordingly.
+          if [[ "${TAG}" =~ -(rc|alpha|beta) ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Stash the size table for the release-body step.
+          {
+            echo "size_table<<EOF_SIZE_TABLE"
+            cat /tmp/sizes.md
+            echo "EOF_SIZE_TABLE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: 🚀 Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: release/pac-man-${{ github.ref_name }}-agon.zip
+          # GitHub auto-generates the changelog from commit messages
+          # since the previous tag. We splice our size table at the
+          # top so it sits next to the download link.
+          generate_release_notes: true
+          body: |
+            ## 🎮 Bundle
+
+            ${{ steps.bundle.outputs.size_table }}
+
+            The zip contains `pac-man.bin` plus a README explaining
+            how to load it on an Agon Light 2 (hardware or emulator).
+          prerelease: ${{ steps.bundle.outputs.prerelease == 'true' }}
+          fail_on_unmatched_files: true
