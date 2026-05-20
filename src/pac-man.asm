@@ -54,6 +54,7 @@
     include "src/includes/game/ghost_ai.inc"
     include "src/includes/game/fruit.inc"
     include "src/includes/game/lives.inc"
+    include "src/includes/game/level.inc"
     include "src/includes/game/splash.inc"
     include "src/includes/game/credit.inc"
     include "src/includes/game/player.inc"
