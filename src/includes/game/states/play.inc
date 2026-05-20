@@ -125,6 +125,16 @@ state_play_tick:
     ; Ghost AI: mode timer + Blinky's scatter/chase movement.
     call ghost_ai_tick
 
+    ; Maze-clear check (#14). Arcade behaviour: the level-clear transition
+    ; takes precedence over a ghost collision on the same frame, so this
+    ; runs *before* pac_ghost_collision.
+    ld a, (pellets_eaten_level)
+    cp MAZE_TOTAL_PELLETS
+    jr nz, @check_collision
+    ld a, GS_LEVEL_CLEAR
+    jp game_state_set
+
+@check_collision:
     ; Pac-vs-ghost collision check. On hit, drop into DYING and let it
     ; handle the lives decrement + respawn-or-game-over transition.
     call pac_ghost_collision
