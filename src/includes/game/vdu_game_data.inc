@@ -1,5 +1,15 @@
 vdu_game_data:
 
+    ; Banner bitmaps (READY!, READY-erase, GAME OVER) are pre-rendered
+    ; from the arcade font as 48x8 / 72x8 RGBA2 images and plotted at
+    ; pixel-precise positions in state_ready_enter / state_play_enter /
+    ; state_game_over_enter. The text-grid (VDU 31) only steps in 8-px
+    ; rows so the banner couldn't sit cleanly in the maze row 17 lane.
+    macro_bitmap_make_buffered BANNER_READY,       BANNER_READY_W,      BANNER_BANNER_H, "src/assets/banner/ready.rgba2"
+    macro_bitmap_make_buffered BANNER_READY_ERASE, BANNER_READY_W,      BANNER_BANNER_H, "src/assets/banner/ready_erase.rgba2"
+    macro_bitmap_make_buffered BANNER_GAME_OVER,   BANNER_GAME_OVER_W,  BANNER_BANNER_H, "src/assets/banner/game_over.rgba2"
+
+
 ; Pac-Man
 
     macro_bitmap_make_buffered SPRITE_PAC_MAN_00_00, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_man_00_00.rgba2"

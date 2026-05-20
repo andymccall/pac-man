@@ -89,6 +89,9 @@
 ; Score Popup Bitmaps
     include "src/includes/game/sprites/score/score.inc"
 
+; Banner Bitmaps (READY!, GAME OVER)
+    include "src/includes/game/sprites/banner/banner.inc"
+
 ; State machine
     include "src/includes/game/state.inc"
     include "src/includes/game/states/attract_splash.inc"
@@ -173,7 +176,3 @@ up2_txt:
     .db     "2UP"
 up2_txt_end:
 
-ready_txt:
-    .db     31, 30, 26
-    .db     "READY!"
-ready_txt_end:

@@ -32,3 +32,4 @@ vdu_text_set_at:
 @x0:     dw 0x0000
 @y0:     dw 0x0000
 @end:
+
