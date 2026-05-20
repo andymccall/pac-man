@@ -15,6 +15,19 @@ vdu_game_data:
     macro_bitmap_make_buffered SPRITE_PAC_MAN_03_01, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_man_03_01.rgba2"
     macro_bitmap_make_buffered SPRITE_PAC_MAN_03_02, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_man_03_02.rgba2"
 
+    ; Death frames — appended to the Pac-Man sprite as frames 12-22.
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_00, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_00.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_01, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_01.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_02, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_02.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_03, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_03.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_04, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_04.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_05, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_05.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_06, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_06.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_07, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_07.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_08, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_08.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_09, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_09.rgba2"
+    macro_bitmap_make_buffered SPRITE_PAC_DED_00_10, SPRITE_PAC_MAN_WIDTH, SPRITE_PAC_MAN_HEIGHT, "src/assets/pac_man/pac_ded_00_10.rgba2"
+
     macro_sprite_select_sprite SPRITE_PAC_MAN_ID
     macro_sprite_clear_current
 
@@ -30,14 +43,38 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_PAC_MAN_03_00
     macro_sprite_add_frame SPRITE_PAC_MAN_03_01
     macro_sprite_add_frame SPRITE_PAC_MAN_03_02
+    ; Frames 12-22: death animation.
+    macro_sprite_add_frame SPRITE_PAC_DED_00_00
+    macro_sprite_add_frame SPRITE_PAC_DED_00_01
+    macro_sprite_add_frame SPRITE_PAC_DED_00_02
+    macro_sprite_add_frame SPRITE_PAC_DED_00_03
+    macro_sprite_add_frame SPRITE_PAC_DED_00_04
+    macro_sprite_add_frame SPRITE_PAC_DED_00_05
+    macro_sprite_add_frame SPRITE_PAC_DED_00_06
+    macro_sprite_add_frame SPRITE_PAC_DED_00_07
+    macro_sprite_add_frame SPRITE_PAC_DED_00_08
+    macro_sprite_add_frame SPRITE_PAC_DED_00_09
+    macro_sprite_add_frame SPRITE_PAC_DED_00_10
 
     ;macro_sprite_activate 1
 
     macro_sprite_move SPRITE_PAC_MAN_ID, 250,248
 
+    ; Reverse-ghost (frightened/blue) bitmaps — uploaded here so each of
+    ; the four ghost sprites can include them as additional frames 8-15
+    ; for the fright-mode visual swap.
+    macro_bitmap_make_buffered SPRITE_REVERSE_0, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_0.rgba2"
+    macro_bitmap_make_buffered SPRITE_REVERSE_1, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_1.rgba2"
+    macro_bitmap_make_buffered SPRITE_REVERSE_2, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_2.rgba2"
+    macro_bitmap_make_buffered SPRITE_REVERSE_3, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_3.rgba2"
+    macro_bitmap_make_buffered SPRITE_REVERSE_4, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_4.rgba2"
+    macro_bitmap_make_buffered SPRITE_REVERSE_5, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_5.rgba2"
+    macro_bitmap_make_buffered SPRITE_REVERSE_6, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_6.rgba2"
+    macro_bitmap_make_buffered SPRITE_REVERSE_7, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_7.rgba2"
+
     ; Blinky
 
-    macro_bitmap_make_buffered SPRITE_BLINKY_0, SPRITE_BLINKY_WIDTH, SPRITE_BLINKY_HEIGHT, "src/assets/ghosts/blinky/blinky_0.rgba2" 
+    macro_bitmap_make_buffered SPRITE_BLINKY_0, SPRITE_BLINKY_WIDTH, SPRITE_BLINKY_HEIGHT, "src/assets/ghosts/blinky/blinky_0.rgba2"
     macro_bitmap_make_buffered SPRITE_BLINKY_1, SPRITE_BLINKY_WIDTH, SPRITE_BLINKY_HEIGHT, "src/assets/ghosts/blinky/blinky_1.rgba2" 
     macro_bitmap_make_buffered SPRITE_BLINKY_2, SPRITE_BLINKY_WIDTH, SPRITE_BLINKY_HEIGHT, "src/assets/ghosts/blinky/blinky_2.rgba2" 
     macro_bitmap_make_buffered SPRITE_BLINKY_3, SPRITE_BLINKY_WIDTH, SPRITE_BLINKY_HEIGHT, "src/assets/ghosts/blinky/blinky_3.rgba2" 
@@ -57,6 +94,15 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_BLINKY_5
     macro_sprite_add_frame SPRITE_BLINKY_6
     macro_sprite_add_frame SPRITE_BLINKY_7
+    ; Frames 8-15: frightened (blue) ghost — shared across all four ghosts.
+    macro_sprite_add_frame SPRITE_REVERSE_0
+    macro_sprite_add_frame SPRITE_REVERSE_1
+    macro_sprite_add_frame SPRITE_REVERSE_2
+    macro_sprite_add_frame SPRITE_REVERSE_3
+    macro_sprite_add_frame SPRITE_REVERSE_4
+    macro_sprite_add_frame SPRITE_REVERSE_5
+    macro_sprite_add_frame SPRITE_REVERSE_6
+    macro_sprite_add_frame SPRITE_REVERSE_7
 
     ; Pinky
 
@@ -80,6 +126,14 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_PINKY_5
     macro_sprite_add_frame SPRITE_PINKY_6
     macro_sprite_add_frame SPRITE_PINKY_7
+    macro_sprite_add_frame SPRITE_REVERSE_0
+    macro_sprite_add_frame SPRITE_REVERSE_1
+    macro_sprite_add_frame SPRITE_REVERSE_2
+    macro_sprite_add_frame SPRITE_REVERSE_3
+    macro_sprite_add_frame SPRITE_REVERSE_4
+    macro_sprite_add_frame SPRITE_REVERSE_5
+    macro_sprite_add_frame SPRITE_REVERSE_6
+    macro_sprite_add_frame SPRITE_REVERSE_7
 
     ; Inky
 
@@ -103,6 +157,14 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_INKY_5
     macro_sprite_add_frame SPRITE_INKY_6
     macro_sprite_add_frame SPRITE_INKY_7
+    macro_sprite_add_frame SPRITE_REVERSE_0
+    macro_sprite_add_frame SPRITE_REVERSE_1
+    macro_sprite_add_frame SPRITE_REVERSE_2
+    macro_sprite_add_frame SPRITE_REVERSE_3
+    macro_sprite_add_frame SPRITE_REVERSE_4
+    macro_sprite_add_frame SPRITE_REVERSE_5
+    macro_sprite_add_frame SPRITE_REVERSE_6
+    macro_sprite_add_frame SPRITE_REVERSE_7
 
     ; Clyde
 
@@ -126,17 +188,17 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_CLYDE_5
     macro_sprite_add_frame SPRITE_CLYDE_6
     macro_sprite_add_frame SPRITE_CLYDE_7
+    macro_sprite_add_frame SPRITE_REVERSE_0
+    macro_sprite_add_frame SPRITE_REVERSE_1
+    macro_sprite_add_frame SPRITE_REVERSE_2
+    macro_sprite_add_frame SPRITE_REVERSE_3
+    macro_sprite_add_frame SPRITE_REVERSE_4
+    macro_sprite_add_frame SPRITE_REVERSE_5
+    macro_sprite_add_frame SPRITE_REVERSE_6
+    macro_sprite_add_frame SPRITE_REVERSE_7
 
-    ; Reverse
-
-    macro_bitmap_make_buffered SPRITE_REVERSE_0, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_0.rgba2" 
-    macro_bitmap_make_buffered SPRITE_REVERSE_1, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_1.rgba2" 
-    macro_bitmap_make_buffered SPRITE_REVERSE_2, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_2.rgba2" 
-    macro_bitmap_make_buffered SPRITE_REVERSE_3, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_3.rgba2" 
-    macro_bitmap_make_buffered SPRITE_REVERSE_4, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_4.rgba2" 
-    macro_bitmap_make_buffered SPRITE_REVERSE_5, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_5.rgba2" 
-    macro_bitmap_make_buffered SPRITE_REVERSE_6, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_6.rgba2" 
-    macro_bitmap_make_buffered SPRITE_REVERSE_7, SPRITE_REVERSE_WIDTH, SPRITE_REVERSE_HEIGHT, "src/assets/ghosts/reverse/reverse_7.rgba2" 
+    ; Reverse (bitmaps already uploaded above for the ghost-sprite fright
+    ; frames; this sprite slot is for the attract-mode display only).
 
     macro_sprite_select_sprite SPRITE_REVERSE_ID
     macro_sprite_clear_current
@@ -259,7 +321,20 @@ vdu_game_data:
 
     macro_sprite_add_frame SPRITE_PAC_MAN_LIFE_0
 
-    macro_sprite_activate 15
+    ; Score popup (200/400/800/1600 chain bonus for eating frightened ghosts).
+    macro_bitmap_make_buffered SPRITE_SCORE_200,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_200.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_400,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_400.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_800,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_800.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_1600, SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_1600.rgba2"
+
+    macro_sprite_select_sprite SPRITE_SCORE_POPUP_ID
+    macro_sprite_clear_current
+    macro_sprite_add_frame SPRITE_SCORE_200
+    macro_sprite_add_frame SPRITE_SCORE_400
+    macro_sprite_add_frame SPRITE_SCORE_800
+    macro_sprite_add_frame SPRITE_SCORE_1600
+
+    macro_sprite_activate 16
 
     macro_sprite_move SPRITE_PAC_MAN_LIFE_ID, 334,150
 
@@ -299,11 +374,13 @@ vdu_game_data:
     macro_bitmap_make_buffered SPRITE_MAZE_TILE_32, SPRITE_MAZE_TILE_WIDTH, SPRITE_MAZE_TILE_HEIGHT, "src/assets/maze/tile_32.rgba2"
     macro_bitmap_make_buffered SPRITE_MAZE_TILE_33, SPRITE_MAZE_TILE_WIDTH, SPRITE_MAZE_TILE_HEIGHT, "src/assets/maze/tile_33.rgba2"
     macro_bitmap_make_buffered SPRITE_MAZE_TILE_34, SPRITE_MAZE_TILE_WIDTH, SPRITE_MAZE_TILE_HEIGHT, "src/assets/maze/tile_34.rgba2"
+    macro_bitmap_make_buffered SPRITE_MAZE_TILE_35, SPRITE_MAZE_TILE_WIDTH, SPRITE_MAZE_TILE_HEIGHT, "src/assets/maze/tile_35.rgba2"
 
     ; Pellets
     macro_bitmap_make_buffered SPRITE_NULL_PELLET_00, SPRITE_PELLET_TILE_WIDTH, SPRITE_PELLET_TILE_HEIGHT, "src/assets/pellet/null_pellet_00.rgba2"
     macro_bitmap_make_buffered SPRITE_PELLET_00, SPRITE_PELLET_TILE_WIDTH, SPRITE_PELLET_TILE_HEIGHT, "src/assets/pellet/pellet_00.rgba2"
     macro_bitmap_make_buffered SPRITE_POWER_PELLET_00, SPRITE_PELLET_TILE_WIDTH, SPRITE_PELLET_TILE_HEIGHT, "src/assets/pellet/power_pellet_00.rgba2"
+    macro_bitmap_make_buffered SPRITE_ERASE_PELLET_00, SPRITE_PELLET_TILE_WIDTH, SPRITE_PELLET_TILE_HEIGHT, "src/assets/pellet/erase_pellet_00.rgba2"
 
     ; Menu Ghosts
     macro_bitmap_make_buffered SPRITE_BLINKY_MENU_00, SPRITE_BLINKY_WIDTH, SPRITE_BLINKY_HEIGHT, "src/assets/ghosts/blinky/blinky_0.rgba2"

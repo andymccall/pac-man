@@ -38,3 +38,4 @@ SPRITE_MAZE_TILE_31:            equ 431
 SPRITE_MAZE_TILE_32:            equ 432
 SPRITE_MAZE_TILE_33:            equ 433
 SPRITE_MAZE_TILE_34:            equ 434
+SPRITE_MAZE_TILE_35:            equ 435    ; ghost-pen gate (pink horizontal line)
