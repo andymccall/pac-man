@@ -97,6 +97,7 @@ state_player_select_tick:
     ld (credit), a
     call lives_init
     call fruit_init
+    call level_init
     ld hl, 0
     ld (player_1_score), hl
     ld a, GS_READY
@@ -110,6 +111,7 @@ state_player_select_tick:
     ld (credit), a
     call lives_init
     call fruit_init
+    call level_init
     ld hl, 0
     ld (player_1_score), hl
     ld a, GS_READY
