@@ -913,6 +913,33 @@ clyde_chase_target:
     jp ghost_scatter_target       ; close → override to scatter corner
 
 ; ---------------------------------------------------------------------------
+; ghost_at_no_up_tile — Z=1 iff (bd_cur_row, bd_cur_col) is one of the
+; four arcade no-up tiles: (11, 12), (11, 15), (23, 12), (23, 15).
+; Caller must have populated bd_cur_row/col (ghost_decide does this
+; before any direction tries).
+; Destroys: af
+; ---------------------------------------------------------------------------
+NO_UP_ROW_UPPER: equ 11           ; intersection row directly above the pen
+NO_UP_ROW_LOWER: equ 23           ; mirrored intersection row in the lower maze
+NO_UP_COL_LEFT:  equ 12           ; left flank of the pen / lower mirror
+NO_UP_COL_RIGHT: equ 15           ; right flank
+
+ghost_at_no_up_tile:
+    ld a, (bd_cur_row)
+    cp NO_UP_ROW_UPPER
+    jr z, @check_col
+    cp NO_UP_ROW_LOWER
+    jr z, @check_col
+    or 1                          ; not on a no-up row → Z=0
+    ret
+@check_col:
+    ld a, (bd_cur_col)
+    cp NO_UP_COL_LEFT
+    ret z
+    cp NO_UP_COL_RIGHT
+    ret
+
+; ---------------------------------------------------------------------------
 ; ghost_at_tile_center — Z=1 iff the ghost at IX is on a tile centre.
 ; ---------------------------------------------------------------------------
 ghost_at_tile_center:
@@ -950,8 +977,20 @@ ghost_decide:
     xor a
     ld (bd_best_dir), a
 
+    ; Arcade "no-up" tiles. Four specific intersections above and below
+    ; the pen where ghost AI is forbidden from picking DIR_UP — used by
+    ; skilled players to deny ghosts an escape route. Eaten ghosts (eyes
+    ; returning to the pen) ignore the rule so they can still take the
+    ; direct route home through these tiles.
+    ld a, (ix + GS_EATEN)
+    or a
+    jr nz, @try_up                ; eyes — no-up rule does not apply
+    call ghost_at_no_up_tile
+    jr z, @skip_up
+@try_up:
     ld a, DIR_UP
     call @try_dir
+@skip_up:
     ld a, DIR_LEFT
     call @try_dir
     ld a, DIR_DOWN
