@@ -66,6 +66,8 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_PAC_DED_00_09
     macro_sprite_add_frame SPRITE_PAC_DED_00_10
 
+    macro_sprite_mark_hardware                  ; #15
+
     ;macro_sprite_activate 1
 
     macro_sprite_move SPRITE_PAC_MAN_ID, 250,248
@@ -114,6 +116,8 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_REVERSE_6
     macro_sprite_add_frame SPRITE_REVERSE_7
 
+    macro_sprite_mark_hardware                  ; #15 — Blinky
+
     ; Pinky
 
     macro_bitmap_make_buffered SPRITE_PINKY_0, SPRITE_PINKY_WIDTH, SPRITE_PINKY_HEIGHT, "src/assets/ghosts/pinky/pinky_0.rgba2" 
@@ -144,6 +148,8 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_REVERSE_5
     macro_sprite_add_frame SPRITE_REVERSE_6
     macro_sprite_add_frame SPRITE_REVERSE_7
+
+    macro_sprite_mark_hardware                  ; #15 — Pinky
 
     ; Inky
 
@@ -176,6 +182,8 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_REVERSE_6
     macro_sprite_add_frame SPRITE_REVERSE_7
 
+    macro_sprite_mark_hardware                  ; #15 — Inky
+
     ; Clyde
 
     macro_bitmap_make_buffered SPRITE_CLYDE_0, SPRITE_CLYDE_WIDTH, SPRITE_CLYDE_HEIGHT, "src/assets/ghosts/clyde/clyde_0.rgba2" 
@@ -207,6 +215,8 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_REVERSE_6
     macro_sprite_add_frame SPRITE_REVERSE_7
 
+    macro_sprite_mark_hardware                  ; #15 — Clyde
+
     ; Reverse (bitmaps already uploaded above for the ghost-sprite fright
     ; frames; this sprite slot is for the attract-mode display only).
 
@@ -222,6 +232,8 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_REVERSE_6
     macro_sprite_add_frame SPRITE_REVERSE_7
 
+    macro_sprite_mark_hardware                  ; #15 — REVERSE (attract slot)
+
     ;macro_sprite_activate 6
 
     macro_sprite_move SPRITE_REVERSE_ID, 296,90
@@ -235,6 +247,8 @@ vdu_game_data:
 
     macro_sprite_add_frame SPRITE_CHERRY_0
 
+    macro_sprite_mark_hardware                  ; #15 — cherry
+
     ;macro_sprite_activate 7
 
     macro_sprite_move SPRITE_CHERRY_0_ID, 338,320
@@ -246,6 +260,8 @@ vdu_game_data:
     macro_sprite_clear_current
 
     macro_sprite_add_frame SPRITE_BERRY_0
+
+    macro_sprite_mark_hardware                  ; #15 — berry
 
     ;macro_sprite_activate 8
 
@@ -259,6 +275,8 @@ vdu_game_data:
 
     macro_sprite_add_frame SPRITE_ORANGE_0
 
+    macro_sprite_mark_hardware                  ; #15 — orange
+
     ;macro_sprite_activate 9
 
     macro_sprite_move SPRITE_ORANGE_0_ID, 242,150
@@ -270,6 +288,8 @@ vdu_game_data:
     macro_sprite_clear_current
 
     macro_sprite_add_frame SPRITE_APPLE_0
+
+    macro_sprite_mark_hardware                  ; #15 — apple
 
     ;macro_sprite_activate 10
 
@@ -283,6 +303,8 @@ vdu_game_data:
 
     macro_sprite_add_frame SPRITE_MELON_0
 
+    macro_sprite_mark_hardware                  ; #15 — melon
+
     ;macro_sprite_activate 11
 
     macro_sprite_move SPRITE_MELON_0_ID, 274,150
@@ -294,6 +316,8 @@ vdu_game_data:
     macro_sprite_clear_current
 
     macro_sprite_add_frame SPRITE_GALAXIAN_0
+
+    macro_sprite_mark_hardware                  ; #15 — galaxian
 
     ;macro_sprite_activate 12
 
@@ -307,6 +331,8 @@ vdu_game_data:
 
     macro_sprite_add_frame SPRITE_BELL_0
 
+    macro_sprite_mark_hardware                  ; #15 — bell
+
     ;macro_sprite_activate 13
 
     macro_sprite_move SPRITE_BELL_0_ID, 306,150
@@ -318,6 +344,8 @@ vdu_game_data:
     macro_sprite_clear_current
 
     macro_sprite_add_frame SPRITE_KEY_0
+
+    macro_sprite_mark_hardware                  ; #15 — key
 
     ;macro_sprite_activate 14
 
@@ -331,6 +359,8 @@ vdu_game_data:
 
     macro_sprite_add_frame SPRITE_PAC_MAN_LIFE_0
 
+    macro_sprite_mark_hardware                  ; #15 — life icon
+
     ; Score popup (200/400/800/1600 chain bonus for eating frightened ghosts).
     macro_bitmap_make_buffered SPRITE_SCORE_200,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_200.rgba2"
     macro_bitmap_make_buffered SPRITE_SCORE_400,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_400.rgba2"
@@ -343,6 +373,8 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_SCORE_400
     macro_sprite_add_frame SPRITE_SCORE_800
     macro_sprite_add_frame SPRITE_SCORE_1600
+
+    macro_sprite_mark_hardware                  ; #15 — score popup
 
     macro_sprite_activate 16
 

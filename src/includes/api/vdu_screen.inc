@@ -39,11 +39,29 @@ vdu_screen_set_mode:
 ; Inputs: a, set the scaling mode, 1=on, 0=off
 ;
 vdu_screen_set_scaling:
-	ld (@arg),a        
-	ld hl,@cmd         
-	ld bc,@end-@cmd    
+	ld (@arg),a
+	ld hl,@cmd
+	ld bc,@end-@cmd
 	rst.lil VDU_OUTPUT_TO_VDP
 	ret
 @cmd: db 23,0,0xC0
 @arg: db 0
-@end: 
+@end:
+
+; Name: vdu_screen_swap_buffers
+; Description: Swap the active display buffer (front <-> back) in a
+;              double-buffered mode. All subsequent drawing goes to the
+;              new back buffer; the new front buffer is what's on screen.
+; Note: Mode 20 supports double buffering. The first swap puts us into
+;       DB mode if not already.
+; URL: https://agonconsole8.github.io/agon-docs/vdp/Screen-Modes/#vdu-23-0-c3
+;
+; Inputs: None
+;
+vdu_screen_swap_buffers:
+    ld hl, @cmd
+    ld bc, @end - @cmd
+    rst.lil VDU_OUTPUT_TO_VDP
+    ret
+@cmd: db 23, 0, 0xC3
+@end:

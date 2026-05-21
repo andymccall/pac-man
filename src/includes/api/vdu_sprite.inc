@@ -1,3 +1,26 @@
+; Name: vdu_sprite_enable_hardware
+; Description: Enable the VDP "hardware sprites" test flag. After this,
+;              any sprite marked with VDU 23, 27, 19 before activate
+;              becomes a hardware-composited sprite on real Agon hardware
+;              (VDP 2.12.0+) — no flicker, no per-frame refresh needed.
+;              The emulator silently ignores the flag; sprites stay
+;              software and rely on vdu_refresh as before.
+;
+; Must be called ONCE at boot, before any sprite is activated. Idempotent
+; on the VDP side — re-issuing it just re-sets the flag value.
+vdu_sprite_enable_hardware:
+    ld hl, @cmd
+    ld bc, @end - @cmd
+    rst.lil $18
+    ret
+; VDU 23, 0, &F8, flag; value; — set VDP test flag.
+; flag = 2 (TESTFLAG_HW_SPRITES), value = 1 (enabled).
+@cmd:
+    db 23, 0, $F8
+    dw 2
+    dw 1
+@end:
+
 ; VDU 23, 27, 4, n: Select sprite n
 ; inputs: a is the 8-bit sprite id
 vdu_sprite_select:
