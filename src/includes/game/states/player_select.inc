@@ -27,6 +27,16 @@ state_player_select_enter:
     call vdu_sprite_select
     call vdu_sprite_hide
 
+    ; #39 chase animation can leave Pac and the score popup on screen
+    ; (whether it ends naturally or via a fast-forward through poll_input).
+    ld a, SPRITE_PAC_MAN_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+
+    ld a, SPRITE_SCORE_POPUP_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+
     call vdu_screen_graphics_clear
 
     ; Match the BASHFUL (Inky) cyan used on the previous attract screen.
