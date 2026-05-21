@@ -88,6 +88,18 @@ state_player_select_tick:
     ret
 
 @start_one:
+    jp player_start_one_player
+@start_two:
+    jp player_start_two_player
+
+; player_start_one_player / player_start_two_player — commit a new game.
+; Decrements credit, resets per-game state (lives, fruit, level, score),
+; sets num_players, and transitions to GS_READY. Called from both
+; PLAYER_SELECT (the post-credit second screen) AND ATTRACT_HOLD (so
+; banked credit can start a game without round-tripping through the
+; second screen). Caller is responsible for verifying credit beforehand.
+; Destroys: af, bc, de, hl
+player_start_one_player:
     ld a, 1
     ld (num_players), a
     ld a, (credit)
@@ -105,7 +117,7 @@ state_player_select_tick:
     ld a, GS_READY
     jp game_state_set
 
-@start_two:
+player_start_two_player:
     ld a, 2
     ld (num_players), a
     ld a, (credit)
