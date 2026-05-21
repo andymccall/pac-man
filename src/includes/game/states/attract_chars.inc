@@ -40,16 +40,7 @@ state_attract_chars_timer:   db CHARS_HEADING_WAIT
 
 state_attract_chars_enter:
     call vdu_screen_graphics_clear
-
-    ld a, (vdu_game_data_loaded)
-    or a
-    jr nz, @skip_upload
-    ld hl, vdu_game_data
-    ld bc, vdu_game_data_end - vdu_game_data
-    rst.lil VDU_OUTPUT_TO_VDP
-    ld a, 1
-    ld (vdu_game_data_loaded), a
-@skip_upload:
+    call attract_ensure_game_data_loaded
 
     xor a
     ld (state_attract_chars_phase), a
@@ -65,6 +56,15 @@ state_attract_chars_enter:
     ret
 
 state_attract_chars_tick:
+    ; Fast-forward (#41): C at any point in the reveal deposits a credit
+    ; and jumps straight to PLAYER_SELECT. Non-arcade — quality-of-life
+    ; departure so dev/play doesn't have to sit through the full reveal.
+    ld a, mos_getkbmap
+    rst.lil $08
+    ld a, (ix + $0A)
+    bit 2, a
+    jp nz, @fast_forward
+
     ld hl, state_attract_chars_timer
     dec (hl)
     ret nz
@@ -233,4 +233,29 @@ state_attract_chars_tick:
 @set_reveal_wait:
     ld a, CHARS_REVEAL_WAIT
     ld (state_attract_chars_timer), a
+    ret
+
+@fast_forward:
+    call credit_deposit
+    ld a, GS_PLAYER_SELECT
+    jp game_state_set
+
+; attract_ensure_game_data_loaded — uploads the bitmap/sprite-frame data
+; block to the VDP once per session. Safe to call multiple times; the
+; vdu_game_data_loaded flag short-circuits subsequent calls. Used by:
+;   * state_attract_chars_enter (normal first-time entry)
+;   * state_attract_splash_tick (#41 fast-forward — skips CHARS)
+; If this runs from the SPLASH fast-forward path, the sprites are
+; available immediately when PLAYER_SELECT → READY → PLAY starts the
+; game without the reveal animation ever running.
+; Destroys: af, bc, hl
+attract_ensure_game_data_loaded:
+    ld a, (vdu_game_data_loaded)
+    or a
+    ret nz
+    ld hl, vdu_game_data
+    ld bc, vdu_game_data_end - vdu_game_data
+    rst.lil VDU_OUTPUT_TO_VDP
+    ld a, 1
+    ld (vdu_game_data_loaded), a
     ret
