@@ -39,8 +39,26 @@ state_attract_chars_phase:   db 0
 state_attract_chars_timer:   db CHARS_HEADING_WAIT
 
 state_attract_chars_enter:
+    ; Reset graphics origin to (0, 0). state_ready_enter offsets it to
+    ; (origin_left, origin_top) = (138, 60) so maze plots can use cell-
+    ; relative coords, and never resets it. Without this, the menu
+    ; ghost-reveal bitmap plots in the attract phases land at
+    ; (138+155, 60+91) = (293, 151) etc. instead of (155, 91) — which is
+    ; exactly what showed up on attract loops after the first game.
+    ld bc, 0
+    ld de, 0
+    call vdu_set_gfx_origin
+
     call vdu_screen_graphics_clear
     call attract_ensure_game_data_loaded
+
+    ; Defensive: hide every sprite slot. Has to run AFTER
+    ; attract_ensure_game_data_loaded — the first time through it does
+    ; the upload + macro_sprite_activate 16; before that, "hide sprite N"
+    ; is a no-op because the sprite doesn't exist yet. On subsequent
+    ; attract entries (after GAME OVER) the upload is skipped and the
+    ; hides catch anything left visible by the previous game.
+    call attract_hide_game_sprites
 
     xor a
     ld (state_attract_chars_phase), a
@@ -259,3 +277,29 @@ attract_ensure_game_data_loaded:
     ld a, 1
     ld (vdu_game_data_loaded), a
     ret
+
+; attract_hide_game_sprites — defensively re-hide every play-state
+; sprite (Pac, cherry, the four ghosts) at the start of every attract
+; loop. state_game_over_enter already hides them on the way out, but
+; re-issuing here is cheap insurance against any path that bypasses
+; that state (e.g. a future "exit to attract" debug shortcut).
+; Destroys: af, bc, hl
+attract_hide_game_sprites:
+    ld a, SPRITE_PAC_MAN_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+    ld a, SPRITE_CHERRY_0_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+    ld a, SPRITE_BLINKY_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+    ld a, SPRITE_PINKY_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+    ld a, SPRITE_INKY_ID
+    call vdu_sprite_select
+    call vdu_sprite_hide
+    ld a, SPRITE_CLYDE_ID
+    call vdu_sprite_select
+    jp vdu_sprite_hide

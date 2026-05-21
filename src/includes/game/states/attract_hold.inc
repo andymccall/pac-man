@@ -77,14 +77,33 @@ state_attract_hold_tick:
     ld a, mos_getkbmap
     rst.lil $08
 
-    ; C — deposit credit.
+    ; C — deposit credit + jump to PLAYER_SELECT. HOLD doesn't auto-
+    ; advance on credit > 0; it has to be a fresh C press, so banked
+    ; credit (e.g. left over from a 2-coin insert that played one game)
+    ; doesn't repeatedly skip the title screen.
     ld a, (ix + $0A)
     bit 2, a
-    call nz, credit_deposit
-
-    ; Any credit available? → switch to PLAYER_SELECT (the second screen).
-    ld a, (credit)
-    or a
-    ret z
+    jr z, @check_start
+    call credit_deposit
     ld a, GS_PLAYER_SELECT
     jp game_state_set
+
+@check_start:
+    ; 1 / 2 — start a game directly if credit is already banked. Lets
+    ; the player begin without round-tripping through PLAYER_SELECT
+    ; (matches the arcade: with credit in, START works from any
+    ; attract screen).
+    ld a, (credit)
+    or a
+    ret z                               ; no credit — no start
+    ld a, (ix + $06)
+    bit 0, a
+    jp nz, player_start_one_player
+
+    ld a, (credit)
+    cp 2
+    ret c                               ; less than 2 credits — no 2P
+    ld a, (ix + $06)
+    bit 1, a
+    jp nz, player_start_two_player
+    ret
