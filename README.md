@@ -32,12 +32,18 @@ Controls are keyboard today; the [EIGHTSBITWIDE Arcade board](https://andymccall
 |---|---|
 | Pac-Man movement (tile-aligned, cornering, tunnel wrap) | ✅ |
 | Ghost AI (chase / scatter / fright / eyes-return) | ✅ |
+| Tunnel slow-down + no-up tiles (arcade quirks) | ✅ |
 | Power pellets, fright, blink, score chain | ✅ |
+| Eaten-ghost freeze (1 s pause with score popup) | ✅ |
 | Fruit spawning (cherry only) | ✅ |
 | Custom arcade font, banners, score popups | ✅ |
+| Arcade-faithful attract sequence (staggered reveal + title screen) | ✅ |
+| Level progression on maze clear | ✅ |
 | Sound | ❌ (issue #10) |
-| Attract demo / proper main menu | ❌ (issues #11, #12) |
-| Level progression + per-level fruit / speeds / timings | ❌ (issue #14) |
+| Attract demo gameplay (AI Pac) | ❌ (issue #11) |
+| Title-screen chase animation | ❌ (issue #39) |
+| Maze-flash on level clear | ❌ (issue #40) |
+| Per-level scatter timings / Pac speed / fruit type / Cruise Elroy | ❌ (issues #16, #17, #22, #24) |
 | Intermission cutscenes | ❌ (issue #13) |
 | High score persistence + table | ❌ (issues #29, #30) |
 
