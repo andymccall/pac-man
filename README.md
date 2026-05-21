@@ -42,7 +42,7 @@ Controls are keyboard today; the [EIGHTSBITWIDE Arcade board](https://andymccall
 | Sound | ❌ (issue #10) |
 | Attract demo gameplay (AI Pac) | ❌ (issue #11) |
 | Title-screen chase animation | ❌ (issue #39) |
-| Maze-flash on level clear | ❌ (issue #40) |
+| Maze-flash on level clear | ✅ |
 | Per-level scatter timings / Pac speed / fruit type / Cruise Elroy | ❌ (issues #16, #17, #22, #24) |
 | Intermission cutscenes | ❌ (issue #13) |
 | High score persistence + table | ❌ (issues #29, #30) |
