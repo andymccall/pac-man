@@ -97,6 +97,28 @@ ghost_mode:       db GHOST_MODE_SCATTER
 ghost_mode_phase: db 0
 ghost_mode_timer: dl 420
 
+; Per-level scatter / chase phase durations (#16). Eight entries per
+; level — phases 0..7. Phase 0 is scatter, 1 is chase, alternating.
+; Phase 7 has duration 0 which means "infinite" (no further advance).
+; All values are frame counts (60 fps).
+;
+; Three tiers, matching the arcade:
+;   level 1     — leisurely; lots of scatter time
+;   levels 2-4  — middle tier; phase 5 chase nearly forever, phase 6
+;                 scatter shrinks to 1 frame
+;   levels 5+   — hardest; same as 2-4 but phases 0 and 2 scatter shrink
+;                 from 7s (420f) to 5s (300f)
+;
+; Values from the Pittman / Birch dossier on the arcade ROM. The "1
+; frame" phase-6 scatter on levels 2+ is intentional — it triggers a
+; ghosts_all_reverse twitch right before chase ∞.
+mode_timings_level_1:
+    dw 420, 1200, 420, 1200, 300, 1200, 300, 0
+mode_timings_level_2_4:
+    dw 420, 1200, 420, 1200, 300, 61980, 1, 0
+mode_timings_level_5plus:
+    dw 300, 1200, 300, 1200, 300, 62220, 1, 0
+
 ; --- Per-ghost state -------------------------------------------------------
 
 blinky_state:
@@ -197,7 +219,8 @@ ghost_ai_init:
     ld (ghost_mode_phase), a
     ld a, GHOST_MODE_SCATTER
     ld (ghost_mode), a
-    ld hl, 420
+    xor a                          ; phase 0
+    call mode_duration_for_phase   ; HL = level-appropriate scatter time
     ld (ghost_mode_timer), hl
 
     ; Clear fright state.
@@ -661,53 +684,62 @@ ghost_mode_tick:
     inc a
     ld (ghost_mode_phase), a
 
-    cp 1
-    jr nz, @p2
-    ld c, GHOST_MODE_CHASE
-    ld hl, 1200
-    jr @apply
-@p2:
-    cp 2
-    jr nz, @p3
-    ld c, GHOST_MODE_SCATTER
-    ld hl, 420
-    jr @apply
-@p3:
-    cp 3
-    jr nz, @p4
-    ld c, GHOST_MODE_CHASE
-    ld hl, 1200
-    jr @apply
-@p4:
-    cp 4
-    jr nz, @p5
-    ld c, GHOST_MODE_SCATTER
-    ld hl, 300
-    jr @apply
-@p5:
-    cp 5
-    jr nz, @p6
-    ld c, GHOST_MODE_CHASE
-    ld hl, 1200
-    jr @apply
-@p6:
-    cp 6
-    jr nz, @p7
-    ld c, GHOST_MODE_SCATTER
-    ld hl, 300
-    jr @apply
-@p7:
-    ld c, GHOST_MODE_CHASE
-    ld hl, 0
+    ; New mode = phase & 1 (phase 0=scatter, 1=chase, 2=scatter, ...).
+    ld c, a                       ; save phase
+    and 1                         ; A = new mode (0=SCATTER, 1=CHASE)
+    ld b, a                       ; B = new mode
 
-@apply:
-    ld (ghost_mode_timer), hl
-    ld a, (ghost_mode)
-    cp c
-    ret z                         ; same mode → no reversal
+    ; Look up the new phase's duration from the per-level table.
     ld a, c
+    call mode_duration_for_phase
+    ld (ghost_mode_timer), hl
+
+    ; Apply the new mode and reverse if it changed (it always changes
+    ; in our alternating 8-phase setup, but the guard is harmless).
+    ld a, (ghost_mode)
+    cp b
+    ret z                         ; same mode — no reversal
+    ld a, b
     ld (ghost_mode), a
     jp ghosts_all_reverse
+
+; mode_duration_for_phase — return the duration (HL, 24-bit clean) of
+; the given scatter/chase phase for the current level.
+; Inputs:  A = phase (0..7)
+; Outputs: HL = duration in frames (0 means "infinite")
+; Destroys: af, bc, de, ix
+mode_duration_for_phase:
+    push af
+    call mode_timings_table_for_ix    ; IX = table base
+    pop af
+    add a, a                          ; offset = phase * 2 (dw entries)
+    ld d, 0
+    ld e, a
+    add ix, de                        ; IX = entry
+    ld hl, 0                          ; clear HLU so subsequent 24-bit
+                                      ; arithmetic on HL is well-defined
+    ld l, (ix+0)
+    ld h, (ix+1)
+    ret
+
+; mode_timings_table_for_ix — pick the right per-level table.
+; Inputs:  current_level (1..)
+; Outputs: IX = base of the table for this level
+; Destroys: af
+mode_timings_table_for_ix:
+    ld a, (current_level)
+    cp 2
+    jr c, @level_1                    ; current_level == 1
+    cp 5
+    jr c, @level_2_4                  ; 2..4
+    ld ix, mode_timings_level_5plus
+    ret
+@level_1:
+    ld ix, mode_timings_level_1
+    ret
+@level_2_4:
+    ld ix, mode_timings_level_2_4
+    ret
 
 ; ---------------------------------------------------------------------------
 ; ghost_target — fill (bd_tgt_row, bd_tgt_col) for the ghost at IX.
