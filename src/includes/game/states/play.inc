@@ -117,6 +117,13 @@ state_play_tick:
     bit 7, a
     call nz, pause
 
+    ; C — deposit credit. The HUD redraw at the top of state_play_tick
+    ; picks up the new value next frame so the player sees CREDIT bump
+    ; immediately.
+    ld a, (ix + $0A)
+    bit 2, a
+    call nz, credit_deposit
+
     ; Movement: queued-direction tile-based turn, then 1-pixel step
     call pac_input_sample
     call pac_try_turn
