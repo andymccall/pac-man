@@ -3,34 +3,7 @@
 state_ready_timer: db 120     ; ~2 sec at 60 fps
 
 state_ready_enter:
-    call vdu_screen_graphics_clear
-
-    ld bc, origin_left + 8
-    ld de, origin_top + 8
-    call vdu_set_gfx_origin
-
-    ld ix, maze_wall
-    ld hl, SPRITE_MAZE_TILE_00
-    call draw_maze
-    ld ix, maze_pellets
-    ld hl, SPRITE_NULL_PELLET_00
-    call draw_maze
-
-    ld bc, origin_left
-    ld de, origin_top
-    call vdu_set_gfx_origin
-
-    ; Plot the READY! banner as a pre-rendered yellow bitmap. Lets us
-    ; position it per-pixel so it sits cleanly in maze row 17 (the open
-    ; lane below the pen) rather than overlapping a wall row.
-    ld hl, BANNER_READY
-    call vdu_buffer_select
-    ld bc, BANNER_READY_REL_X
-    ld de, BANNER_REL_Y
-    call vdu_bitmap_plot
-
-    ; Lives HUD: re-blit so post-death decrements show.
-    call lives_display
+    call @draw_static
 
     ; Reset Pac-Man.
     ; Order matters: vdu_sprite_select clobbers BC (and rst.lil $18 likely
@@ -81,6 +54,40 @@ state_ready_enter:
     ld a, 120
     ld (state_ready_timer), a
     ret
+
+; @draw_static — paint the maze + pellets + READY banner + lives HUD onto
+; whichever buffer is currently the back. Called twice from
+; state_ready_enter (once per buffer) so both stay in sync.
+; Destroys: af, bc, de, hl, ix
+@draw_static:
+    call vdu_screen_graphics_clear
+
+    ld bc, origin_left + 8
+    ld de, origin_top + 8
+    call vdu_set_gfx_origin
+
+    ld ix, maze_wall
+    ld hl, SPRITE_MAZE_TILE_00
+    call draw_maze
+    ld ix, maze_pellets
+    ld hl, SPRITE_NULL_PELLET_00
+    call draw_maze
+
+    ld bc, origin_left
+    ld de, origin_top
+    call vdu_set_gfx_origin
+
+    ; Plot the READY! banner as a pre-rendered yellow bitmap. Lets us
+    ; position it per-pixel so it sits cleanly in maze row 17 (the open
+    ; lane below the pen) rather than overlapping a wall row.
+    ld hl, BANNER_READY
+    call vdu_buffer_select
+    ld bc, BANNER_READY_REL_X
+    ld de, BANNER_REL_Y
+    call vdu_bitmap_plot
+
+    ; Lives HUD: re-blit so post-death decrements show.
+    jp lives_display
 
 state_ready_tick:
     call display_1up

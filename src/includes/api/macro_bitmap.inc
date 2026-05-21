@@ -1,9 +1,12 @@
 ; Name: macro_bitmap_make_buffered
-; Description: Make a buffered bitmap
-; Note: 
+; Description: Upload an RGBA2 file into a VDP buffer and create a
+;              bitmap from it. The bitmap can then be plotted directly
+;              via vdu_bitmap_plot, OR added as a sprite frame via
+;              macro_sprite_add_frame (see macro_sprite.inc).
+; Note:
 ; URL:
 ;
-; Inputs: spriteId, width, height, data
+; Inputs: bitmapId, width, height, data
 ; Returns: None
 ; Destroys: None
     macro macro_bitmap_make_buffered id, width, height, data
@@ -16,5 +19,5 @@
     .dw     id                          ; ID (word)
     .db     23,27,$21                   ; create bitmap from buffer
     .dw     width, height               ; width, height (both words)
-    .db     SPRITE_TYPE_RGBA2222         
+    .db     BITMAP_FORMAT_RGBA2222         
     endmacro

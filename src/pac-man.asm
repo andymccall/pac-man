@@ -118,6 +118,13 @@ start:
 
     call vdu_cursor_off
 
+    ; Enable hardware sprites on the VDP (no-op on emulator / older VDP
+    ; firmware). Must run BEFORE the sprite setup in vdu_game_data, since
+    ; the per-sprite hardware-mark flag is sampled at activate time.
+    ; #15 — fixes the sprite-plane tearing visible on Pac and ghosts
+    ; during gameplay on real Agon Light 2 hardware.
+    call vdu_sprite_enable_hardware
+
     ; Upload + select the arcade font so every subsequent text output
     ; uses it instead of the MOS system font.
     call font_init
