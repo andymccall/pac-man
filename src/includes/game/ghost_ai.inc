@@ -434,17 +434,17 @@ ghosts_animate:
     jp ghost_animate_one
 
 ; ghost_animate_one — pick + apply the right frame for the ghost at IX.
-; Inputs: IX = ghost state, A = stagger offset (Blinky=0, Pinky=1, …).
+; Inputs: IX = ghost state. (A used to carry a per-ghost stagger before
+; #20; now ignored — the direction-specific frame layout means all four
+; ghosts can share the same leg phase.)
 ; Frame priority:
 ;   1. GS_EATEN set → eyes frame for current direction (12-15)
 ;   2. fright_active → blue frame (8 or 9 from fright_anim_phase)
-;   3. otherwise   → normal frame ((normal_phase + stagger) mod 8)
+;   3. otherwise   → normal frame (dir_base + (anim_phase & 1))
 ;
 ; Frame index goes via memory because vdu_sprite_select clobbers BC.
 ; Destroys: af, bc
 ghost_animate_one:
-    ld (@stagger), a
-
     ld a, (ix + GS_EATEN)
     or a
     jr nz, @eyes
@@ -457,11 +457,35 @@ ghost_animate_one:
     jr nz, @fright
 
 @normal:
+    ; #20 direction-specific frames. The 8 normal frames are laid out as
+    ; 2 anim phases × 4 directions: right(0-1) / left(2-3) / up(4-5) /
+    ; down(6-7). Frame index = dir_base + (anim_phase & 1).
+    ;
+    ; The per-ghost stagger we used to apply with the shared 8-frame
+    ; cycle is dropped — with direction-specific frames the ghosts face
+    ; the way they move and a shared leg-phase looks fine (arcade
+    ; behaviour).
+    ld a, (ix + GS_DIR)
+    cp DIR_LEFT
+    jr z, @dir_left
+    cp DIR_UP
+    jr z, @dir_up
+    cp DIR_DOWN
+    jr z, @dir_down
+    ld b, 0                            ; DIR_RIGHT (or NONE — default right)
+    jr @dir_done
+@dir_left:
+    ld b, 2
+    jr @dir_done
+@dir_up:
+    ld b, 4
+    jr @dir_done
+@dir_down:
+    ld b, 6
+@dir_done:
     ld a, (state_play_normal_anim_phase)
-    ld b, a
-    ld a, (@stagger)
+    and 1
     add a, b
-    and 7
     jr @apply
 
 @fright:
@@ -497,7 +521,6 @@ ghost_animate_one:
     ld a, (@frame)
     jp vdu_sprite_select_frame
 
-@stagger: db 0
 @frame:   db 0
 
 ; ghost_eat — Pac has eaten the ghost at IX. Mark eaten and snap the
