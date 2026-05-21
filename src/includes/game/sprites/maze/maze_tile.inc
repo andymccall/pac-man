@@ -39,3 +39,46 @@ SPRITE_MAZE_TILE_32:            equ 432
 SPRITE_MAZE_TILE_33:            equ 433
 SPRITE_MAZE_TILE_34:            equ 434
 SPRITE_MAZE_TILE_35:            equ 435    ; ghost-pen gate (pink horizontal line)
+
+; --- #40 maze-flash: white-tinted variants ---------------------------------
+; Same shape as the blue wall tiles but with every non-zero RGBA2 byte
+; flattened to 0xFF (= R=3, G=3, B=3, A=3, full white opaque). The block
+; sits at the same offset spacing as the blue block (tile N white =
+; SPRITE_MAZE_TILE_00_WHITE + N) so state_level_clear can swap the
+; maze_wall_base_bufferId and call draw_maze unchanged.
+SPRITE_MAZE_TILE_00_WHITE:      equ 500
+SPRITE_MAZE_TILE_01_WHITE:      equ 501
+SPRITE_MAZE_TILE_02_WHITE:      equ 502
+SPRITE_MAZE_TILE_03_WHITE:      equ 503
+SPRITE_MAZE_TILE_04_WHITE:      equ 504
+SPRITE_MAZE_TILE_05_WHITE:      equ 505
+SPRITE_MAZE_TILE_06_WHITE:      equ 506
+SPRITE_MAZE_TILE_07_WHITE:      equ 507
+SPRITE_MAZE_TILE_08_WHITE:      equ 508
+SPRITE_MAZE_TILE_09_WHITE:      equ 509
+SPRITE_MAZE_TILE_10_WHITE:      equ 510
+SPRITE_MAZE_TILE_11_WHITE:      equ 511
+SPRITE_MAZE_TILE_12_WHITE:      equ 512
+SPRITE_MAZE_TILE_13_WHITE:      equ 513
+SPRITE_MAZE_TILE_14_WHITE:      equ 514
+SPRITE_MAZE_TILE_15_WHITE:      equ 515
+SPRITE_MAZE_TILE_16_WHITE:      equ 516
+SPRITE_MAZE_TILE_17_WHITE:      equ 517
+SPRITE_MAZE_TILE_18_WHITE:      equ 518
+SPRITE_MAZE_TILE_19_WHITE:      equ 519
+SPRITE_MAZE_TILE_20_WHITE:      equ 520
+SPRITE_MAZE_TILE_21_WHITE:      equ 521
+SPRITE_MAZE_TILE_22_WHITE:      equ 522
+SPRITE_MAZE_TILE_23_WHITE:      equ 523
+SPRITE_MAZE_TILE_24_WHITE:      equ 524
+SPRITE_MAZE_TILE_25_WHITE:      equ 525
+SPRITE_MAZE_TILE_26_WHITE:      equ 526
+SPRITE_MAZE_TILE_27_WHITE:      equ 527
+SPRITE_MAZE_TILE_28_WHITE:      equ 528
+SPRITE_MAZE_TILE_29_WHITE:      equ 529
+SPRITE_MAZE_TILE_30_WHITE:      equ 530
+SPRITE_MAZE_TILE_31_WHITE:      equ 531
+SPRITE_MAZE_TILE_32_WHITE:      equ 532
+SPRITE_MAZE_TILE_33_WHITE:      equ 533
+SPRITE_MAZE_TILE_34_WHITE:      equ 534
+SPRITE_MAZE_TILE_35_WHITE:      equ 535
