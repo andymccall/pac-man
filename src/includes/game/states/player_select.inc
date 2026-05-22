@@ -153,6 +153,9 @@ player_start_one_player:
     call level_init
     ld hl, 0
     ld (player_1_score), hl
+    ld a, 1
+    ld (lives_pop_pending), a        ; arm the new-game HUD deduction
+    ld (state_ready_show_announce), a ; and the "PLAYER ONE" announce
     ld a, GS_READY
     jp game_state_set
 
@@ -169,5 +172,8 @@ player_start_two_player:
     call level_init
     ld hl, 0
     ld (player_1_score), hl
+    ld a, 1
+    ld (lives_pop_pending), a
+    ld (state_ready_show_announce), a
     ld a, GS_READY
     jp game_state_set

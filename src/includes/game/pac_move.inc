@@ -46,18 +46,25 @@ pac_tunnel_center_max: equ 188
 pac_right_edge_sprite_x: equ 358  ; maze_play_origin_x + 27*8 - 8
 pac_left_edge_sprite_x:  equ 138  ; maze_play_origin_x - 8
 
-; pac_reset — clear movement + animation state, show closed-mouth right.
-; Called by state_ready_enter so Pac starts each life stationary.
+; pac_reset — clear movement + animation state, show the full-circle
+; closed-mouth frame. Called by state_ready_enter so Pac starts each
+; life stationary as a featureless yellow disc.
+;
+; Frame layout: per direction the 3 anim frames go 0=wide-open,
+; 1=half-open, 2=closed (per assets/pac_man/pac_man_DD_NN.rgba2; see
+; the dump in PR #61). Frame 2 of the right-facing block is the
+; full circle, and that's what the arcade uses on READY.
 pac_reset:
     xor a
     ld (pac_dir), a
     ld (pac_desired_dir), a
+    ld a, 2                  ; anim phase = closed; first move opens the mouth
     ld (pac_anim_frame), a
     ld a, pac_anim_period
     ld (pac_anim_counter), a
     ld a, SPRITE_PAC_MAN_ID
     call vdu_sprite_select
-    ld a, 0                  ; closed-mouth right (looks like a yellow disc)
+    ld a, 2                  ; full circle (right-facing, mouth closed)
     jp vdu_sprite_select_frame
 
 ; pac_on_tunnel_row — Z=1 if sprite_y in DE places Pac's centre on the

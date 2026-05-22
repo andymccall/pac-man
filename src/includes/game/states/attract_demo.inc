@@ -120,6 +120,7 @@ state_ready_enter_for_demo:
     call vdu_set_gfx_origin
 
     call lives_display
+    call fruit_history_display
 
     ld a, SPRITE_PAC_MAN_ID
     call vdu_sprite_select

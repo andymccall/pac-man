@@ -23,7 +23,9 @@ credit_display:
     ret
 
 credit_data:
-    .db     31, 18, 41
+    ; Place at col 18, row 46 — bottom of screen, below the lives /
+    ; fruit-history HUD strip.
+    .db     31, 18, 46
     .db     "CREDIT ",0
 credit_data_end:
 
