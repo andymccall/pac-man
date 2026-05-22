@@ -56,6 +56,7 @@
     include "src/includes/game/pac_script.inc"
     include "src/includes/game/fruit.inc"
     include "src/includes/game/lives.inc"
+    include "src/includes/game/config.inc"
     include "src/includes/game/level.inc"
     include "src/includes/game/splash.inc"
     include "src/includes/game/credit.inc"
@@ -132,6 +133,12 @@ start:
     ; Upload + select the arcade font so every subsequent text output
     ; uses it instead of the MOS system font.
     call font_init
+
+    ; Persistent settings + high score. Loads PACMAN.CFG into RAM, or
+    ; writes a defaults file on first boot / corruption. Must run before
+    ; lives_init et al. so cfg_lives_start has the correct value when a
+    ; game starts.
+    call config_load
 
     ; Start in the attract splash. (state_attract_splash_enter uploads the
     ; splash bitmaps and renders the small_screen banner.)

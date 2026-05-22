@@ -4,6 +4,10 @@
 state_game_over_timer: dl 180     ; ~3 s at 60 fps
 
 state_game_over_enter:
+    ; Persist the high score if this run beat the stored top. No-op if
+    ; player_1_score <= cfg_high_score; otherwise writes PACMAN.CFG.
+    call config_high_score_commit
+
     ; Hide every play-state sprite so the attract menu we drop back into
     ; doesn't render leftover Pac/cherry on top of the character roster.
     ; Ghosts were already hidden by state_dying_enter; we redo them here

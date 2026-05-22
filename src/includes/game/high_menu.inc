@@ -66,8 +66,31 @@ display_2up:
     ret
 
 display_high_score:
-    ; Print the high score
+    ; Label.
     ld hl, high_score_data
     ld bc, high_score_data_end - high_score_data
     rst.lil VDU_OUTPUT_TO_VDP
-    ret
+
+    ; Numeric value below the label. Painted as the live max of
+    ; cfg_high_score (loaded at boot, persisted at GAME_OVER) and the
+    ; current player_1_score — so when the active player passes the
+    ; stored top, the on-screen value tracks them in real time.
+    macro_text_set_color VDU_COL_WHITE
+    ld hl, high_score_pos
+    call vdu_text_print
+
+    ld hl, (player_1_score)
+    ld de, (cfg_high_score)
+    or a
+    sbc hl, de
+    jr c, @show_stored                  ; player < stored
+    ld hl, (player_1_score)
+    jp score_print
+@show_stored:
+    ld hl, (cfg_high_score)
+    jp score_print
+
+high_score_pos:
+    ; Cursor for the numeric value — col 29, row 4 (centred under
+    ; "HIGH SCORE" at col 27, which spans cols 27..36).
+    .db     31, 29, 4, 0
