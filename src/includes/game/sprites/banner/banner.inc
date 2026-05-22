@@ -4,7 +4,10 @@
 
 BANNER_BANNER_H:     equ 8
 BANNER_READY_W:      equ 48          ; 6 chars × 8 px
-BANNER_GAME_OVER_W:  equ 72          ; 9 chars × 8 px
+BANNER_GAME_OVER_W:  equ 80          ; 10 chars × 8 px ("GAME  OVER" with
+                                     ; a two-space gap — the gap is the
+                                     ; arcade's fruit-icon slot, used in
+                                     ; later levels' GAME OVER screen)
 
 BANNER_READY:        equ 110
 BANNER_READY_ERASE:  equ 111
@@ -18,8 +21,8 @@ BANNER_GAME_OVER:    equ 112
 ; READY! is 48 px wide; centred on the door column (pixel x = 258) it
 ; starts at pixel x = 258 - 24 = 234, relative x = 234 - 138 = 96.
 ;
-; GAME OVER is 72 px wide; centred start at pixel x = 258 - 36 = 222,
-; relative x = 222 - 138 = 84.
+; GAME  OVER is 80 px wide; centred start at pixel x = 258 - 40 = 218,
+; relative x = 218 - 138 = 80.
 BANNER_READY_REL_X:      equ 96
-BANNER_GAME_OVER_REL_X:  equ 84
+BANNER_GAME_OVER_REL_X:  equ 80
 BANNER_REL_Y:            equ 144     ; 204 - 60
