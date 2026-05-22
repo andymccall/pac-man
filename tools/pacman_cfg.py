@@ -3,21 +3,28 @@
 pacman_cfg.py — Inspect and edit PACMAN.CFG, the binary settings + high
 score table file written by the game (see src/includes/game/config.inc).
 
-File layout (schema v2, 80 bytes):
+File layout (schema v3, 80 bytes):
     offset  size  field
     0       2     magic 'P','C'
-    2       1     schema version (0x02)
+    2       1     schema version (0x03)
     3       1     lives_start (DIP — 3 or 5)
     4       60    score table — 10 entries × 6 bytes:
                     +0..+2  initials (3 ASCII chars)
                     +3..+5  score (24-bit LE)
-    64      16    reserved (zero — future DIPs)
+    64      1     show_score_table (DIP — 0 = off, 1 = on)
+    65      15    reserved (zero — future DIPs)
+
+The 1980 arcade cabinet had no top-10 screen — show_score_table defaults
+to 0 (off) on a fresh file. The score table itself is still tracked
+internally so the persisted top score (entry 0) can drive the HUD
+readout regardless of whether the screen is enabled.
 
 Subcommands:
-    dump PATH                  — decode and print every field including
-                                 the full top-10 table.
-    edit PATH --lives N        — set lives_start (3 or 5) and rewrite.
-    edit PATH --reset-table    — restore the factory-default top-10.
+    dump PATH                      — decode and print every field.
+    edit PATH --lives N            — set lives_start (3 or 5).
+    edit PATH --reset-table        — restore the factory-default top-10.
+    edit PATH --show-score-table on|off
+                                   — toggle the optional attract screen.
 
 Editing the score table entry-by-entry is intentionally not supported:
 the file is meant for setting machine DIPs and resetting the table back
@@ -32,15 +39,16 @@ from pathlib import Path
 
 CFG_SIZE = 80
 CFG_MAGIC = b"PC"
-CFG_VERSION = 0x02
+CFG_VERSION = 0x03
 ALLOWED_LIVES = (3, 5)
 
 TABLE_OFFSET = 4
 TABLE_ENTRIES = 10
 TABLE_ENTRY_SZ = 6
 TABLE_BYTES = TABLE_ENTRIES * TABLE_ENTRY_SZ
-RESERVED_OFFSET = TABLE_OFFSET + TABLE_BYTES
-RESERVED_BYTES = CFG_SIZE - RESERVED_OFFSET
+SHOW_TABLE_OFFSET = TABLE_OFFSET + TABLE_BYTES                # 64
+RESERVED_OFFSET = SHOW_TABLE_OFFSET + 1                       # 65
+RESERVED_BYTES = CFG_SIZE - RESERVED_OFFSET                   # 15
 
 # Must mirror cfg_factory_table in src/includes/game/config.inc — keep
 # in sync if either side changes.
@@ -101,10 +109,12 @@ def load(path: Path) -> bytearray:
 
 def cmd_dump(args: argparse.Namespace) -> int:
     buf = load(args.path)
-    print(f"file:        {args.path}")
-    print(f"magic:       {buf[0:2].decode('ascii', errors='replace')!r}")
-    print(f"version:     0x{buf[2]:02X}")
-    print(f"lives_start: {buf[3]}  (DIP — editable)")
+    show_table = bool(buf[SHOW_TABLE_OFFSET])
+    print(f"file:             {args.path}")
+    print(f"magic:            {buf[0:2].decode('ascii', errors='replace')!r}")
+    print(f"version:          0x{buf[2]:02X}")
+    print(f"lives_start:      {buf[3]}        (DIP — editable)")
+    print(f"show_score_table: {'on' if show_table else 'off':<3}      (DIP — editable; off is arcade-faithful)")
     print()
     print("high-score table (read-only via --reset-table):")
     print("  rank  initials      score")
@@ -112,7 +122,7 @@ def cmd_dump(args: argparse.Namespace) -> int:
         print(f"  {i:>4}  {initials:<3}        {score:>6}")
     print()
     reserved_hex = " ".join(f"{b:02X}" for b in buf[RESERVED_OFFSET:CFG_SIZE])
-    print(f"reserved:    {reserved_hex}")
+    print(f"reserved:         {reserved_hex}")
     return 0
 
 
@@ -127,6 +137,19 @@ def cmd_edit(args: argparse.Namespace) -> int:
             changed = True
         else:
             print(f"lives_start: already {args.lives}, no change")
+
+    if args.show_score_table is not None:
+        new_val = 1 if args.show_score_table == "on" else 0
+        current = buf[SHOW_TABLE_OFFSET]
+        if current != new_val:
+            label = "on" if new_val else "off"
+            prev = "on" if current else "off"
+            print(f"show_score_table: {prev} -> {label}")
+            buf[SHOW_TABLE_OFFSET] = new_val
+            changed = True
+        else:
+            label = "on" if new_val else "off"
+            print(f"show_score_table: already {label}, no change")
 
     if args.reset_table:
         factory = encode_table(FACTORY_TABLE)
@@ -168,6 +191,11 @@ def main(argv: list[str] | None = None) -> int:
         "--reset-table",
         action="store_true",
         help="Restore the factory-default top-10 high-score table.",
+    )
+    p_edit.add_argument(
+        "--show-score-table",
+        choices=("on", "off"),
+        help="Toggle the GS_ATTRACT_SCORES screen (off = 1980 arcade-faithful).",
     )
     p_edit.set_defaults(func=cmd_edit)
 
