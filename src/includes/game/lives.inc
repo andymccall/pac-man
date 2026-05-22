@@ -16,10 +16,17 @@ BONUS_LIFE_SCORE: equ 10000
 lives:                 db 3
 bonus_life_awarded:    db 0     ; 1 once the 10k bonus has been given this game
 
+; 1 while a READY phase is pending a HUD deduction (set by game-start
+; and by dying.inc; consumed by state_ready_tick at the +1 s mark).
+; Cleared by lives_pop after it fires. Level-clear → READY transitions
+; deliberately do NOT set this — those re-enter READY without burning
+; a life.
+lives_pop_pending:     db 0
+
 ; Pixel position of the leftmost life icon. Successive icons are placed
 ; SPRITE_PAC_MAN_LIFE_WIDTH pixels to the right.
-lives_display_x: equ 152
-lives_display_y: equ 340
+lives_display_x: equ 162
+lives_display_y: equ 320
 
 lives_x_scratch: dl 0            ; current x while looping through icons
 
@@ -56,24 +63,74 @@ bonus_life_check:
     ld (lives), a
     ret
 
-; lives_decrement — A = remaining lives after decrement.
-; Destroys: af
-lives_decrement:
+; lives_pop — if a deduction is pending, decrement lives by 1 and
+; visually remove the rightmost icon from the HUD strip. Called every
+; tick at the +1 s mark of READY; the lives_pop_pending gate makes the
+; call a no-op for level-clear → READY (which mustn't burn a life).
+;
+; Why this lives in READY rather than DYING: arcade-style "HUD =
+; reserves" semantics. The brief flash of the full count at the start
+; of a game (or after a death) is the intro; the deduction at +1 s
+; settles into the reserves-only display that holds until the next
+; death. On the last life that "reserves-only" display is empty.
+; Destroys: af, bc, de, hl, ix, iy
+lives_pop:
+    ld a, (lives_pop_pending)
+    or a
+    ret z
+    xor a
+    ld (lives_pop_pending), a
+
     ld a, (lives)
     or a
-    ret z                        ; already 0; nothing to do
+    ret z
     dec a
     ld (lives), a
-    ret
+
+    ; Erase the strip with a black rect, then let lives_display
+    ; repaint the remaining icons. The rect coords are RELATIVE to
+    ; the current graphics origin (origin_left, origin_top) — we do
+    ; NOT set origin to (0,0) here, because doing so puts two
+    ; back-to-back VDU 29 calls right next to each other (this one
+    ; plus the one lives_display does at its top), and that combo
+    ; consistently corrupts subsequent rendering on the VDP
+    ; (confirmed via blind A/B/C tests). Drawing at relative coords
+    ; avoids the duplicate VDU 29 entirely.
+    ld a, VDU_COL_BLACK
+    call vdu_plot_set_fill
+
+    ; Relative coords for the strip — same math as the absolute
+    ; version, just minus the origin. Multiply-first to dodge
+    ; ez80asm's left-to-right precedence (see
+    ; project_ez80asm_no_precedence).
+    ld bc, lives_display_x - origin_left
+    ld de, lives_display_y - origin_top
+    ld ix, LIVES_START * SPRITE_PAC_MAN_LIFE_WIDTH + lives_display_x - origin_left - 1
+    ld iy, lives_display_y + SPRITE_PAC_MAN_LIFE_HEIGHT - origin_top - 1
+    call vdu_plot_filled_rect
+
+    jp lives_display             ; tail-call: repaints and restores origin
 
 ; lives_display — draw one Pac icon per remaining life along the bottom
-; of the maze. Re-blitted each frame so it survives screen clears.
+; of the maze. Re-blitted by @draw_static so it survives screen clears.
+;
+; Plots in screen-absolute coords — the maze setup leaves the gfx
+; origin at (origin_left, origin_top) = (138, 60), which would push the
+; HUD off the bottom of the screen. Reset origin to (0, 0) for the
+; plot, then restore. (Without this, lives_display_y=340 + 60 = 400,
+; 16 px past the 384-pixel screen bottom — invisible.)
 ; Destroys: af, bc, de, hl
 lives_display:
     ld a, (lives)
     or a
     ret z
     ld b, a                      ; b = loop counter (remaining lives)
+
+    push bc
+    ld bc, 0
+    ld de, 0
+    call vdu_set_gfx_origin
+    pop bc
 
     ld hl, lives_display_x
     ld (lives_x_scratch), hl
@@ -96,4 +153,9 @@ lives_display:
 
     pop bc
     djnz @loop
-    ret
+
+    ; Restore gfx origin so subsequent gameplay bitmap plots (e.g.
+    ; pellet_eat erasing a dot) land at the right place.
+    ld bc, origin_left
+    ld de, origin_top
+    jp vdu_set_gfx_origin

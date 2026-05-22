@@ -2,8 +2,13 @@
 ;
 ; Hide the ghosts (mirrors arcade: ghosts vanish before Pac's death
 ; animation), play the 11-frame death animation on the Pac-Man sprite,
-; then decrement lives. If lives remain, bounce to READY (which respawns
-; sprites). Otherwise go to GAME_OVER.
+; then route to READY (which respawns sprites and deducts a life from
+; the HUD at the +1s mark) or to GAME_OVER if lives is already 0.
+;
+; The lives decrement lives in READY, not here — see lives_pop. The
+; effect is that the HUD always briefly shows the current lives count
+; (including the one Pac is about to play), then settles into the
+; reserves-only display after Pac is "placed".
 ;
 ; Death frames are appended to the Pac-Man sprite as frames 12-22
 ; (PAC_DEATH_FIRST_FRAME..PAC_DEATH_LAST_FRAME). state_dying_anim_period
@@ -94,11 +99,18 @@ state_dying_tick:
     or a
     jr nz, @demo_done
 
-    call lives_decrement
+    ; READY does the actual decrement; here we only need to know
+    ; whether this was the final life. lives==0 means READY already
+    ; took the last reserve, so the run we just died on was the last
+    ; one — no more respawns.
     ld a, (lives)
     or a
     jr z, @game_over
 
+    ld a, 1
+    ld (lives_pop_pending), a       ; arm the HUD deduction for the
+                                    ; respawn READY (level-clear path
+                                    ; deliberately doesn't)
     ld a, GS_READY
     jp game_state_set
 @game_over:
