@@ -50,7 +50,7 @@ Controls are keyboard today; the [EIGHTSBITWIDE Arcade board](https://andymccall
 | Original Pac-Man intermission cutscenes (MVP — title + Pac chase) | ✅ |
 | Double-buffered rendering (no tearing during heavy redraws) | ✅ |
 | Sound | ❌ (issue #10) |
-| Per-level Pac speed / Cruise Elroy | ❌ (issues #17, #22 — blocked on related groundwork) |
+| Per-level Pac speed / Cruise Elroy | ❌ (issues #17, #22) |
 | Lives DIP-switch (3 vs 5 starting lives) | ❌ (issue #26) |
 | High score persistence + table | ❌ (issues #29, #30) |
 | Two-player alternating-turn mode | ❌ (issue #69) |
