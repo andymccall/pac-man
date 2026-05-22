@@ -129,6 +129,17 @@ pellet_eat:
     ld a, (pellets_eaten_level)
     inc a
     ld (pellets_eaten_level), a
+
+    ; Re-evaluate Cruise Elroy tier (#17). Each pellet eaten lowers
+    ; "remaining" by 1; elroy_update bumps blinky_elroy_level on
+    ; threshold crossings.
+    push bc
+    push de
+    push hl
+    call elroy_update
+    pop hl
+    pop de
+    pop bc
     ; fruit_check_threshold may fall through to fruit_activate at pellets
     ; 70 and 170, which calls vdu_sprite_select (clobbers BC). The next
     ; few lines use C as the pellet's column for the erase-bitmap plot,
