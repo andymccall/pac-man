@@ -19,7 +19,7 @@ MAZE_TOTAL_PELLETS:  equ 244              ; 240 dots + 4 energisers — used
 current_level: db 1
 
 ; level_init — copy maze_pellets_template → maze_pellets_map and reset
-; pellets_eaten_level.
+; pellets_eaten_level. Also picks Pac's per-level sub-pixel speed (#22).
 ; Destroys: af, bc, de, hl
 level_init:
     ld hl, maze_pellets_template
@@ -29,4 +29,8 @@ level_init:
 
     xor a
     ld (pellets_eaten_level), a
-    ret
+
+    ; Pick Pac's normal / fright speed for current_level — see
+    ; pac_move.inc. Resets the accumulator so the new level starts on
+    ; a whole-pixel tick.
+    jp pac_speed_init_for_level
