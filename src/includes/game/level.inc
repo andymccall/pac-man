@@ -33,4 +33,8 @@ level_init:
     ; Pick Pac's normal / fright speed for current_level — see
     ; pac_move.inc. Resets the accumulator so the new level starts on
     ; a whole-pixel tick.
-    jp pac_speed_init_for_level
+    call pac_speed_init_for_level
+
+    ; Load this level's Cruise Elroy thresholds + speeds and reset
+    ; Blinky's elroy tier to 0 (#17).
+    jp elroy_load_for_level

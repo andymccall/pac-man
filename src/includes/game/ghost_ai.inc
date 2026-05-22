@@ -119,6 +119,133 @@ mode_timings_level_2_4:
 mode_timings_level_5plus:
     dw 300, 1200, 300, 1200, 300, 62220, 1, 0
 
+; --- Cruise Elroy (#17) ----------------------------------------------------
+;
+; Late in each level Blinky accelerates and starts chasing Pac even during
+; scatter phases. Two tiers:
+;
+;   Elroy 1 — kicks in when pellets remaining drops to e1_threshold.
+;   Elroy 2 — kicks in when pellets remaining drops to e2_threshold; uses
+;             the higher of two speeds. Strictly faster than Elroy 1.
+;
+; Thresholds and speeds are per-level (Pittman / Birch dossier). L1 uses
+; 80% / 85%; L2+ uses 90% / 95%. Both speed and "chase during scatter"
+; survive across power-pellet fright (fright still slows Blinky and turns
+; him blue — Elroy resumes when fright expires).
+;
+; State lifetime: blinky_elroy_level is reset to 0 by level_init (so each
+; level starts with normal Blinky), then bumped 0 → 1 → 2 by elroy_update
+; on pellet eats. Never demotes within a level. Arcade's "suspend Elroy
+; until Clyde leaves the house after a death" rule is NOT modelled here —
+; see arcade-fidelity-backlog if it ever matters.
+;
+; Storage layout: the four bytes elroy1_threshold..elroy2_speed are
+; intentionally contiguous so elroy_load_for_level can ldir them straight
+; out of the per-level table.
+
+blinky_elroy_level: db 0     ; 0 = not Elroy; 1 = Elroy 1; 2 = Elroy 2
+elroy1_threshold:   db 0     ; pellets remaining trigger for Elroy 1
+elroy1_speed:       db 0     ; Q0.8 speed when in Elroy 1
+elroy2_threshold:   db 0
+elroy2_speed:       db 0
+
+ELROY_SPEED_80: equ 205      ; 80% — L1 Elroy 1
+ELROY_SPEED_85: equ 218      ; 85% — L1 Elroy 2
+ELROY_SPEED_90: equ 230      ; 90% — L2+ Elroy 1
+ELROY_SPEED_95: equ 243      ; 95% — L2+ Elroy 2
+
+; Per-level Elroy table. 19 entries indexed by min(current_level, 19) - 1
+; (so L1 = index 0, L19+ = index 18). Each entry is 4 bytes laid out
+; (e1_threshold, e1_speed, e2_threshold, e2_speed) — same order as the
+; contiguous globals above, so elroy_load_for_level just ldirs them in.
+elroy_table:
+    .db  20, ELROY_SPEED_80,  10, ELROY_SPEED_85    ; L1
+    .db  30, ELROY_SPEED_90,  15, ELROY_SPEED_95    ; L2
+    .db  40, ELROY_SPEED_90,  20, ELROY_SPEED_95    ; L3
+    .db  40, ELROY_SPEED_90,  20, ELROY_SPEED_95    ; L4
+    .db  40, ELROY_SPEED_90,  20, ELROY_SPEED_95    ; L5
+    .db  50, ELROY_SPEED_90,  25, ELROY_SPEED_95    ; L6
+    .db  50, ELROY_SPEED_90,  25, ELROY_SPEED_95    ; L7
+    .db  50, ELROY_SPEED_90,  25, ELROY_SPEED_95    ; L8
+    .db  60, ELROY_SPEED_90,  30, ELROY_SPEED_95    ; L9
+    .db  60, ELROY_SPEED_90,  30, ELROY_SPEED_95    ; L10
+    .db  60, ELROY_SPEED_90,  30, ELROY_SPEED_95    ; L11
+    .db  80, ELROY_SPEED_90,  40, ELROY_SPEED_95    ; L12
+    .db  80, ELROY_SPEED_90,  40, ELROY_SPEED_95    ; L13
+    .db  80, ELROY_SPEED_90,  40, ELROY_SPEED_95    ; L14
+    .db 100, ELROY_SPEED_90,  50, ELROY_SPEED_95    ; L15
+    .db 100, ELROY_SPEED_90,  50, ELROY_SPEED_95    ; L16
+    .db 100, ELROY_SPEED_90,  50, ELROY_SPEED_95    ; L17
+    .db 100, ELROY_SPEED_90,  50, ELROY_SPEED_95    ; L18
+    .db 120, ELROY_SPEED_90,  60, ELROY_SPEED_95    ; L19+
+
+; elroy_load_for_level — populate the four contiguous Elroy globals from
+; elroy_table[min(current_level, 19) - 1], and reset blinky_elroy_level
+; to 0. Called from level_init.
+; Destroys: af, bc, de, hl
+elroy_load_for_level:
+    xor a
+    ld (blinky_elroy_level), a
+
+    ld a, (current_level)
+    or a
+    jr nz, @nonzero
+    inc a                                ; defensive — level 0 shouldn't happen
+@nonzero:
+    cp 20
+    jr c, @ok
+    ld a, 19                             ; clamp at L19+
+@ok:
+    dec a                                ; → index 0..18
+    add a, a
+    add a, a                             ; index × 4
+    ld hl, 0
+    ld l, a
+    ld de, elroy_table
+    add hl, de                           ; HL = entry pointer
+    ld de, elroy1_threshold              ; contiguous (e1_thr, e1_spd, e2_thr, e2_spd)
+    ld bc, 4
+    ldir
+    ret
+
+; elroy_update — re-evaluate Blinky's Elroy tier from pellets remaining.
+; Called by pellet_eat after pellets_eaten_level increments. Tiers only
+; ever go UP within a level; level_init clears them.
+; Destroys: af
+elroy_update:
+    ld a, (pellets_eaten_level)
+    ld b, a
+    ld a, MAZE_TOTAL_PELLETS
+    sub b                                ; A = pellets remaining
+
+    ; Check Elroy 2 first (stricter threshold).
+    ;   Trigger condition: remaining <= threshold.
+    ;   After the lines below: A = threshold, B = remaining. CP B sets:
+    ;     threshold >  remaining → CF=0, ZF=0 → trigger
+    ;     threshold == remaining → CF=0, ZF=1 → trigger
+    ;     threshold <  remaining → CF=1       → not yet (skip)
+    ld b, a                              ; B = remaining
+    ld a, (elroy2_threshold)             ; A = threshold
+    cp b
+    jr c, @check_e1                      ; threshold < remaining → not E2 yet
+    ; threshold >= remaining → trigger E2.
+    ld a, 2
+    ld (blinky_elroy_level), a
+    ret
+@check_e1:
+    ld a, (elroy1_threshold)
+    cp b
+    ret c                                ; threshold < remaining → not E1 yet
+    ; threshold >= remaining → would trigger E1; only set if we aren't
+    ; already at a higher tier (defensive — would only matter if
+    ; thresholds were ever reordered).
+    ld a, (blinky_elroy_level)
+    or a
+    ret nz
+    ld a, 1
+    ld (blinky_elroy_level), a
+    ret
+
 ; --- Per-ghost state -------------------------------------------------------
 
 blinky_state:
@@ -786,9 +913,21 @@ ghost_target:
     ld a, (ix + GS_EATEN)
     or a
     jp nz, ghost_eyes_target
+
     ld a, (ghost_mode)
     cp GHOST_MODE_SCATTER
-    jp z, ghost_scatter_target
+    jr nz, @chase_target
+
+    ; Scatter mode — but Cruise Elroy Blinky (#17) keeps chasing.
+    ld a, (ix + GS_ID)
+    cp GHOST_BLINKY
+    jp nz, ghost_scatter_target
+    ld a, (blinky_elroy_level)
+    or a
+    jp z, ghost_scatter_target           ; Blinky not in Elroy yet
+    jp blinky_chase_target               ; Elroy Blinky chases in scatter
+
+@chase_target:
     ld a, (ix + GS_ID)
     cp GHOST_BLINKY
     jp z, blinky_chase_target
@@ -1527,6 +1666,28 @@ ghost_tick:
     jr z, @house_out_tunnel_check
     ld b, ghost_speed_fright
 @house_out_tunnel_check:
+    ; Cruise Elroy speed boost (#17). Applies only when B is still
+    ; ghost_speed (i.e. fright hasn't taken over), and only to Blinky
+    ; when his elroy tier > 0. Elroy speeds are strictly faster than
+    ; ghost_speed, so this never accidentally slows him.
+    ld a, b
+    cp ghost_speed
+    jr nz, @no_elroy
+    ld a, (ix + GS_ID)
+    cp GHOST_BLINKY
+    jr nz, @no_elroy
+    ld a, (blinky_elroy_level)
+    or a
+    jr z, @no_elroy
+    cp 2
+    jr z, @apply_elroy2
+    ld a, (elroy1_speed)
+    ld b, a
+    jr @no_elroy
+@apply_elroy2:
+    ld a, (elroy2_speed)
+    ld b, a
+@no_elroy:
     ; Tunnel slow-down: HOUSE_OUT ghosts on the tunnel row drop to ~40%.
     ; If current speed is already <= tunnel speed (e.g. fright at 37%),
     ; we don't speed them up — the slower speed wins.
