@@ -13,3 +13,10 @@ SPRITE_BLINKY_6: 		equ 274
 SPRITE_BLINKY_7: 		equ 275
 
 SPRITE_BLINKY_MENU_00:  EQU 601
+
+; Wide 32x16 "Blinky caught on the floor" pose used in the Act 2
+; intermission cutscene. Lives outside the normal 8-frame ghost block
+; (which is direction-aware 16x16) since it's a unique non-game pose.
+SPRITE_BLINKY_INTERMISSION_HEIGHT: equ 16
+SPRITE_BLINKY_INTERMISSION_WIDTH:  equ 32
+SPRITE_BLINKY_INTERMISSION_0:      equ 736
