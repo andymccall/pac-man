@@ -38,6 +38,10 @@ state_play_enter:
     ld a, POWER_PELLET_BLINK_PERIOD
     ld (power_pellet_blink_counter), a
 
+    ; Reset the 1UP blink (#71) so each life starts with the label
+    ; visible and a full period before the first toggle.
+    call display_1up_blink_reset
+
     ; Make sure we don't enter PLAY mid-freeze (e.g. eaten-ghost freeze
     ; carried over via DYING → READY → PLAY if Pac dies during fright).
     xor a
@@ -53,7 +57,9 @@ state_play_enter:
     ret
 
 state_play_tick:
-    call display_1up
+    ; Active player's 1UP label blinks at ~1 Hz (#71). 2UP stays
+    ; static — there's no player 2 turn yet (see #69).
+    call display_1up_blink
     call display_high_score
     call display_2up
     call credit_display
