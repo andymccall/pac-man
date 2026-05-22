@@ -107,6 +107,7 @@
     include "src/includes/game/states/level_clear.inc"
     include "src/includes/game/states/game_over.inc"
     include "src/includes/game/states/attract_demo.inc"
+    include "src/includes/game/states/intermission.inc"
 
 start:
     macro_stack_push_all

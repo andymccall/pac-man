@@ -679,6 +679,28 @@ state_attract_hold_tick:
     ld a, (credit)
     or a
     ret z
+
+    ; Dev affordance for intermission cutscenes (#13) — keys 1/2/3
+    ; fire acts 1/2/3 from the title screen when credit is 0. Commented
+    ; out for release; uncomment (and remove the `ret z` above) to
+    ; iterate visually on the intermissions without playing through to
+    ; the trigger levels. Keymap: '1' = ($06,0), '2' = ($06,1),
+    ; '3' = ($02,1).
+    ;
+    ; ld a, (credit)
+    ; or a
+    ; jr nz, @have_credit
+    ; ld a, (ix + $06)
+    ; bit 0, a
+    ; jr nz, @dev_act_1
+    ; bit 1, a
+    ; jr nz, @dev_act_2
+    ; ld a, (ix + $02)
+    ; bit 1, a
+    ; jr nz, @dev_act_3
+    ; ret
+;
+;@have_credit:
     ld a, (ix + $06)
     bit 0, a
     jp nz, player_start_one_player
@@ -689,3 +711,18 @@ state_attract_hold_tick:
     bit 1, a
     jp nz, player_start_two_player
     ret
+
+;@dev_act_1:
+;    ld a, 1
+;    jr @dev_trigger
+;@dev_act_2:
+;    ld a, 2
+;    jr @dev_trigger
+;@dev_act_3:
+;    ld a, 3
+;@dev_trigger:
+;    ld (state_intermission_act), a
+;    ld a, 1
+;    ld (state_intermission_dev_mode), a
+;    ld a, GS_INTERMISSION
+;    jp game_state_set

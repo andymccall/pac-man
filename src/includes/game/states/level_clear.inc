@@ -98,11 +98,30 @@ state_level_clear_tick:
     ld hl, SPRITE_MAZE_TILE_00
     ld (maze_wall_base_bufferId), hl
 
+    ; Advance the level counter and per-level state BEFORE deciding
+    ; whether to insert an intermission. The cutscene exits to
+    ; GS_READY directly, so all per-level reset must already be done.
     ld a, (current_level)
     inc a
     ld (current_level), a
     call fruit_init
     call level_init
 
+    ; Intermission check: pass the level we just cleared
+    ; (current_level - 1 after the increment) through the act lookup.
+    ; Non-zero → route to GS_INTERMISSION; zero → straight to READY.
+    ld a, (current_level)
+    dec a
+    call intermission_act_for_level
+    or a
+    jr z, @to_ready
+
+    ld (state_intermission_act), a
+    xor a
+    ld (state_intermission_dev_mode), a       ; gameplay path
+    ld a, GS_INTERMISSION
+    jp game_state_set
+
+@to_ready:
     ld a, GS_READY
     jp game_state_set

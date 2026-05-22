@@ -471,4 +471,7 @@ vdu_game_data:
     macro_bitmap_make_buffered SPRITE_INKY_MENU_00, SPRITE_INKY_WIDTH, SPRITE_INKY_HEIGHT, "src/assets/ghosts/inky/inky_0.rgba2"
     macro_bitmap_make_buffered SPRITE_CLYDE_MENU_00, SPRITE_CLYDE_WIDTH, SPRITE_CLYDE_HEIGHT, "src/assets/ghosts/clyde/clyde_0.rgba2"
 
+    ; Wide 32x16 Blinky pose for the Act 2 intermission.
+    macro_bitmap_make_buffered SPRITE_BLINKY_INTERMISSION_0, SPRITE_BLINKY_INTERMISSION_WIDTH, SPRITE_BLINKY_INTERMISSION_HEIGHT, "src/assets/ghosts/blinky/blinky_intermission_0.rgba2"
+
 vdu_game_data_end:
