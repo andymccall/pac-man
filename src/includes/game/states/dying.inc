@@ -1,8 +1,15 @@
 ; GS_DYING — Pac just collided with a ghost.
 ;
-; Hide the ghosts (mirrors arcade: ghosts vanish before Pac's death
-; animation), play the 11-frame death animation on the Pac-Man sprite,
-; then route to READY (which respawns sprites and deducts a life from
+; Three phases (matches the arcade):
+;
+;   1. PRE-ANIM FREEZE (~1 s) — everyone on screen frozen as they were
+;      at the moment of collision. Pac stays in his current direction
+;      frame, all four ghosts stay visible. Nothing animates or moves.
+;   2. DEATH ANIMATION — ghosts vanish, Pac snaps to PAC_DEATH_FIRST_FRAME
+;      and cycles through the 11-frame death sequence.
+;   3. POST-HOLD — Pac held on the final death frame briefly.
+;
+; Then route to READY (which respawns sprites and deducts a life from
 ; the HUD at the +1s mark) or to GAME_OVER if lives is already 0.
 ;
 ; The lives decrement lives in READY, not here — see lives_pop. The
@@ -15,14 +22,28 @@
 ; controls per-frame hold; the total visible-death time is
 ; 11 * period plus state_dying_post_hold extra frames on the last frame.
 
-state_dying_anim_period: equ 8        ; ticks per death frame (~0.13 s)
-state_dying_post_hold:   equ 30       ; ticks held on the last frame
+state_dying_freeze_frames: equ 60     ; ~1 s @ 60 fps — arcade pre-anim pause
+state_dying_anim_period:   equ 8      ; ticks per death frame (~0.13 s)
+state_dying_post_hold:     equ 30     ; ticks held on the last frame
 
-state_dying_anim_index: db 0          ; 0..10 — death frame currently shown
-state_dying_anim_tick:  db 0          ; ticks remaining before next frame
-state_dying_post_tick:  db 0          ; ticks remaining once anim done
+state_dying_freeze_timer: db 0        ; ticks remaining in the pre-anim freeze
+state_dying_anim_index:   db 0        ; 0..10 — death frame currently shown
+state_dying_anim_tick:    db 0        ; ticks remaining before next frame
+state_dying_post_tick:    db 0        ; ticks remaining once anim done
 
 state_dying_enter:
+    ; Arm the pre-anim freeze. Ghosts stay visible and Pac stays in
+    ; his current frame for the duration — the actual death sequence
+    ; kicks in when the freeze expires (see dying_begin_anim).
+    ld a, state_dying_freeze_frames
+    ld (state_dying_freeze_timer), a
+    ret
+
+; dying_begin_anim — phase 1 → phase 2 transition. Hide all four ghosts,
+; snap Pac to the first death frame, arm the animation timers. Called
+; once from state_dying_tick when the freeze expires.
+; Destroys: af
+dying_begin_anim:
     ld a, SPRITE_BLINKY_ID
     call vdu_sprite_select
     call vdu_sprite_hide
@@ -36,7 +57,6 @@ state_dying_enter:
     call vdu_sprite_select
     call vdu_sprite_hide
 
-    ; Snap Pac to the first death frame.
     ld a, SPRITE_PAC_MAN_ID
     call vdu_sprite_select
     ld a, PAC_DEATH_FIRST_FRAME
@@ -59,6 +79,20 @@ state_dying_tick:
     macro_text_set_color VDU_COL_WHITE
     call display_player_1_score
 
+    ; Phase 1 — pre-anim freeze. While this counts down, ghosts and
+    ; Pac stay on screen exactly as they were at the collision moment.
+    ld a, (state_dying_freeze_timer)
+    or a
+    jr z, @anim_phase
+    dec a
+    ld (state_dying_freeze_timer), a
+    ret nz                              ; still freezing
+    ; Freeze just hit 0 — kick off the death animation (hide ghosts,
+    ; snap Pac to death frame, arm anim timers) and return; first
+    ; anim frame is shown on the next tick.
+    jp dying_begin_anim
+
+@anim_phase:
     ; Per-frame hold.
     ld hl, state_dying_anim_tick
     dec (hl)
