@@ -87,6 +87,13 @@ state_dying_tick:
     ret nz
 
     ; Hold expired — decide what happens next.
+    ; Demo mode (#11): the GAME OVER banner is already on screen
+    ; (plotted by state_attract_demo_enter) so we skip GS_GAME_OVER
+    ; entirely and bounce straight back to ATTRACT_CHARS.
+    ld a, (demo_active)
+    or a
+    jr nz, @demo_done
+
     call lives_decrement
     ld a, (lives)
     or a
@@ -96,4 +103,9 @@ state_dying_tick:
     jp game_state_set
 @game_over:
     ld a, GS_GAME_OVER
+    jp game_state_set
+@demo_done:
+    xor a
+    ld (demo_active), a
+    ld a, GS_ATTRACT_CHARS
     jp game_state_set

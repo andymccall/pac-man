@@ -52,6 +52,8 @@
     include "src/includes/game/pellet_eat.inc"
     include "src/includes/game/pac_move.inc"
     include "src/includes/game/ghost_ai.inc"
+    include "src/includes/game/pac_ai.inc"
+    include "src/includes/game/pac_script.inc"
     include "src/includes/game/fruit.inc"
     include "src/includes/game/lives.inc"
     include "src/includes/game/level.inc"
@@ -104,6 +106,7 @@
     include "src/includes/game/states/dying.inc"
     include "src/includes/game/states/level_clear.inc"
     include "src/includes/game/states/game_over.inc"
+    include "src/includes/game/states/attract_demo.inc"
 
 start:
     macro_stack_push_all

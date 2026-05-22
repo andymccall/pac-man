@@ -7,8 +7,15 @@
 ;   * 'C' continues to add credit
 ;
 ; num_players: 1 or 2, set on transition out.
+;
+; If no input arrives within PLAYER_SELECT_DEMO_TIMEOUT frames, hand off
+; to GS_ATTRACT_DEMO (#11). This is what makes the attract cycle reach
+; the demo: SPLASH → CHARS → HOLD → PLAYER_SELECT → DEMO → CHARS …
+
+PLAYER_SELECT_DEMO_TIMEOUT: equ 600       ; 10 s at 60 Hz
 
 num_players: db 0
+player_select_demo_timer: dw PLAYER_SELECT_DEMO_TIMEOUT
 
 state_player_select_enter:
     ld a, SPRITE_INKY_ID
@@ -38,6 +45,11 @@ state_player_select_enter:
     call vdu_sprite_hide
 
     call vdu_screen_graphics_clear
+
+    ; Reset the demo hand-off timer so each entry to this state gets a
+    ; fresh PLAYER_SELECT_DEMO_TIMEOUT window before the demo kicks in.
+    ld hl, PLAYER_SELECT_DEMO_TIMEOUT
+    ld (player_select_demo_timer), hl
 
     ; Match the BASHFUL (Inky) cyan used on the previous attract screen.
     macro_text_set_color 0x16
@@ -75,6 +87,19 @@ state_player_select_tick:
     call vdu_text_print
 
 @inputs:
+    ; Demo hand-off — if no input arrives within the timeout window,
+    ; transition to the AI-driven demo (#11). The timer is reset on
+    ; entry so transient idle from a prior visit doesn't shortcut.
+    ld hl, (player_select_demo_timer)
+    dec hl
+    ld (player_select_demo_timer), hl
+    ld a, h
+    or l
+    jr nz, @no_demo_timeout
+    ld a, GS_ATTRACT_DEMO
+    jp game_state_set
+@no_demo_timeout:
+
     ld a, mos_getkbmap
     rst.lil $08
 
