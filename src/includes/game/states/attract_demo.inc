@@ -39,7 +39,11 @@ demo_active:                db 0
 
 state_attract_demo_phase:   db DEMO_PHASE_READY
 state_attract_demo_ready:   db DEMO_READY_FRAMES
-state_attract_demo_failsafe: dw DEMO_FAILSAFE_FRAMES
+; 3-byte allocation: `ld (state_attract_demo_failsafe), hl` and the
+; matching read are 24-bit in ADL, so a `dw` here would spill HLU into
+; the next byte — which is `state_attract_demo_enter`'s first code
+; byte. Same flavour of bug as #54's chase_pac_accum / chase_ghost_accum.
+state_attract_demo_failsafe: dl DEMO_FAILSAFE_FRAMES
 
 ; Entry --------------------------------------------------------------------
 
