@@ -116,11 +116,19 @@ chase_ghost_anim:      db 0
 chase_ghost_anim_count: db CHASE_GHOST_ANIM_PERIOD
 chase_popup_visible:   db 0
 
-; Q8.8 subpixel accumulators (16-bit). Reset at state entry and at
-; LEFT→RIGHT transition so speed changes don't carry over a half-pixel
-; from the previous phase.
-chase_pac_accum:       dw 0
-chase_ghost_accum:     dw 0
+; Q8.8 subpixel accumulators (16-bit logically). Allocated with `dl`
+; (3 bytes) rather than `dw` because the reset code uses `ld (..), hl`
+; which in ADL mode writes 3 bytes (L, H, HLU). If these were `dw`, the
+; HLU byte would overflow past the variable's allocation and land on
+; whatever follows in memory — for `chase_ghost_accum: dw` that next
+; byte is the first instruction byte of `state_attract_hold_enter`,
+; whose `3E` (start of `ld a, ATTRACT_CHASE_PELLET_BLINK_PERIOD`) gets
+; clobbered to `00`. After one HOLD cycle, the function executes as
+; `NOP; ex af, af'; ld (counter), a; ...` and the blink counter is
+; seeded from a random A' instead of 8 — making the chase pellet stay
+; static for an indeterminate stretch on cycle 2. See #54.
+chase_pac_accum:       dl 0
+chase_ghost_accum:     dl 0
 
 ; --- State entry -----------------------------------------------------------
 

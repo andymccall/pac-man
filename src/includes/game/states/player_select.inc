@@ -15,7 +15,11 @@
 PLAYER_SELECT_DEMO_TIMEOUT: equ 600       ; 10 s at 60 Hz
 
 num_players: db 0
-player_select_demo_timer: dw PLAYER_SELECT_DEMO_TIMEOUT
+; 3-byte allocation: `ld (player_select_demo_timer), hl` and the
+; matching read are 24-bit in ADL, so a `dw` here would spill HLU into
+; the next byte — which is `state_player_select_enter`'s first code
+; byte. Same flavour of bug as #54's chase_pac_accum / chase_ghost_accum.
+player_select_demo_timer: dl PLAYER_SELECT_DEMO_TIMEOUT
 
 state_player_select_enter:
     ld a, SPRITE_INKY_ID
