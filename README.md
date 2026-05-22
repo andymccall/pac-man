@@ -31,21 +31,31 @@ Controls are keyboard today; the [EIGHTSBITWIDE Arcade board](https://andymccall
 | Area | Status |
 |---|---|
 | Pac-Man movement (tile-aligned, cornering, tunnel wrap) | ✅ |
+| Pac-Man stalls 1 frame on pellet eat, 3 frames on power-pellet | ✅ |
 | Ghost AI (chase / scatter / fright / eyes-return) | ✅ |
+| Per-level scatter / chase timings | ✅ |
 | Tunnel slow-down + no-up tiles (arcade quirks) | ✅ |
 | Power pellets, fright, blink, score chain | ✅ |
+| Pre-death freeze + 11-frame death animation | ✅ |
 | Eaten-ghost freeze (1 s pause with score popup) | ✅ |
-| Fruit spawning (cherry only) | ✅ |
+| Bonus fruit — level-aware sprite + points (cherry → key) + on-eat popup (100 / 300 / 500 / 700 / 1000) | ✅ |
+| Lives HUD + per-level fruit-history strip | ✅ |
 | Custom arcade font, banners, score popups | ✅ |
-| Arcade-faithful attract sequence (staggered reveal + title screen) | ✅ |
-| Level progression on maze clear | ✅ |
-| Sound | ❌ (issue #10) |
-| Attract demo gameplay (AI Pac) | ❌ (issue #11) |
-| Title-screen chase animation | ❌ (issue #39) |
+| READY! → "PLAYER ONE" → maze sequence on game start; pre-game life deduction | ✅ |
+| 1UP blinks during play; PUSH START blinks on credit screen | ✅ |
+| Arcade-faithful attract sequence (splash → staggered reveal → title chase animation → credit hold) | ✅ |
+| Demo gameplay in attract loop (AI-driven Pac) | ✅ |
 | Maze-flash on level clear | ✅ |
-| Per-level scatter timings / Pac speed / fruit type / Cruise Elroy | ❌ (issues #16, #17, #22, #24) |
-| Intermission cutscenes | ❌ (issue #13) |
+| Level progression on maze clear | ✅ |
+| Original Pac-Man intermission cutscenes (MVP — title + Pac chase) | ✅ |
+| Double-buffered rendering (no tearing during heavy redraws) | ✅ |
+| Sound | ❌ (issue #10) |
+| Per-level Pac speed / Cruise Elroy | ❌ (issues #17, #22 — blocked on related groundwork) |
+| Lives DIP-switch (3 vs 5 starting lives) | ❌ (issue #26) |
 | High score persistence + table | ❌ (issues #29, #30) |
+| Two-player alternating-turn mode | ❌ (issue #69) |
+| Joystick / gamepad input | ❌ (issue #68) |
+| Super Pac-Man intermissions | ❌ (issue #66, placeholder) |
 
 Full backlog: [open issues](https://github.com/andymccall/pac-man/issues).
 
@@ -73,14 +83,30 @@ Don't want to install the toolchain on your host? The `Dockerfile` packages `ez8
 ```sh
 make           # build bin/pac-man.bin
 make clean     # wipe bin/ and release/
-make package   # bundle pac-man-<git-describe>.zip into release/
+make release   # bundle pac-man-<git-describe>.zip into release/
 make run       # launch fab-agon-emulator on the bin/ folder
+make help      # list all targets (regular + docker) with descriptions
 ```
+
+The Makefile prints colour + emoji status; set `NO_COLOR=1` for plain output (CI / dumb terminals).
 
 ### Containerised build
 
+The `Dockerfile` packages the entire toolchain (ez80asm, Python/Pillow, make) so you don't need any of it on your host. Wrapper targets drive it without typing the full `docker run` invocation:
+
 ```sh
-# Pull the published toolchain image and build
+make docker-image      # build the toolchain image locally (pac-man-builder:dev)
+make docker-build      # run `make build` inside the container
+make docker-clean      # run `make clean` inside the container
+make docker-release    # run `make release` inside the container
+make docker-shell      # drop into bash inside the container
+```
+
+`docker-build` depends on `docker-image`, so the image is built (or refreshed) on demand. Override the tag with `DOCKER_IMAGE=…`.
+
+If you'd rather skip the local image build entirely, the same image is published to GHCR by [`.github/workflows/docker.yml`](.github/workflows/docker.yml) on Dockerfile changes:
+
+```sh
 docker pull ghcr.io/andymccall/pac-man-builder:latest
 docker run --rm -v "$PWD:/work" -w /work \
     --user "$(id -u):$(id -g)" \
@@ -124,11 +150,14 @@ pac-man/
 │       │                               #   vdu_bitmap_plot, vdu_text_*, macro_*)
 │       ├── system/                     #   MOS RST table, stack macros
 │       └── game/                       #   Game logic — see below
+├── tools/
+│   ├── png_to_rgba2.py                 # PNG → Agon RGBA2222 single-file converter
+│   └── gen_score_popups.py             # Generate Pinky-pink score popup sprites
 ├── .github/
 │   ├── workflows/                      # build / docker / release / size-delta / lint
 │   └── dependabot.yml                  # Weekly GHA action updates
 ├── bin/                                # Build output (gitignored)
-├── release/                            # `make package` output (gitignored)
+├── release/                            # `make release` output (gitignored)
 ├── Dockerfile                          # Toolchain image (ez80asm + Python/Pillow)
 └── Makefile
 ```
@@ -143,17 +172,27 @@ The `src/includes/game/` tree holds the actual game logic — one file per syste
 - **Sprites + bitmaps** ride on the Agon VDP's sprite + bitmap-buffer system. Sprite slot 0 is Pac, slots 1-4 are ghosts, 5 is the (attract-mode) reverse-ghost demo, 6-13 are the fruit slots, 14 is the lives icon, 15 is the score popup. Bitmap buffers carry the maze tiles (400-435), pellets (440-443), score popups (340-343), banners (110-112), and the custom font (100). The full buffer-id map lives in the includes under `sprites/`.
 - **Custom font** is uploaded at boot via the VDP Font API (`VDU 23, 0, 0xA0` write + `0x95` create + select). The font glyphs were extracted from `reference/sprite_sheet.png` directly. See [src/includes/game/font.inc](src/includes/game/font.inc); note the **consolidate** step — the VDP rejects multi-block buffers as font sources, so we issue a `VDU 23, 0, 0xA0, id, 14` to merge the upload into a single block before the create command.
 
-A proper wiki with diagrams and per-system walk-throughs is on the roadmap (issue #33).
+A wiki with per-system walk-throughs lives at [github.com/andymccall/pac-man/wiki](https://github.com/andymccall/pac-man/wiki) — Architecture, Game states, Ghost AI, Sprites + VDP, Asset pipeline, Maze coord math, etc. Diagrams + screenshots are still being added (issue #33).
 
 ## Asset pipeline
 
 Most bitmaps in `src/assets/` were one-shot extracted from `reference/sprite_sheet.png` using small Python scripts. The extractors aren't part of the build (the bitmaps live in-tree as `.rgba2` files alongside their sprite-id includes), but the technique is documented inline and in the project's CLAUDE-memory notes for reproducibility:
 
 - **Font** (`src/assets/font/arcade.1bpp`) — 256 chars × 8 rows of 1-bit-packed glyphs. Digits 0-9 and uppercase A-Z extracted from the sheet's font block with a per-glyph 90° rotation (the source stores them rotated CW). Plus hand-drawn `!` and `.`, opening / closing quotes at codepoints 147 / 148, `©` at 169.
-- **Score popups** (`src/assets/score/`) — 16×8 RGBA2 bitmaps for 200 / 400 / 800 / 1600, extracted from the rotated sprite sheet and packed in cyan (`0xFC`).
+- **Score popups** (`src/assets/score/`) — 16×8 RGBA2 bitmaps. Cyan ghost-eat values (200 / 400 / 800 / 1600) were extracted from the rotated sprite sheet. Pinky-pink fruit-eat values (10 / 50 / 100 / 300 / 500 / 700 / 1000) are generated by [`tools/gen_score_popups.py`](tools/gen_score_popups.py), which lifts the digit shapes from the cyan sprites and adds matching hand-authored 3/5/7 glyphs.
 - **Banners** (`src/assets/banner/`) — `READY!` (yellow) and `GAME OVER` (red) rendered from the arcade font into RGBA2 bitmaps, plus a black `READY!` eraser. Pre-rendered rather than printed via VDU 5 / PLOT MOVE because the text-grid only steps in 8-px rows but the banners need to sit mid-lane.
 - **Gate tile** (`src/assets/maze/tile_35.rgba2`) — the pink horizontal ghost-pen gate, drawn by hand in 8×8 RGBA2.
 - **Pac-Man + ghosts + fruit** — pre-existing sprite assets, untouched.
+
+### Converting PNG → RGBA2
+
+For any new authored PNGs (e.g. the wide intermission Blinky pose), use [`tools/png_to_rgba2.py`](tools/png_to_rgba2.py):
+
+```sh
+python3 tools/png_to_rgba2.py assets/proc/sprites/my_sprite.png src/assets/path/my_sprite.rgba2
+```
+
+Takes any rectangular PNG, encodes each pixel as Agon RGBA2222 (1 byte per pixel), and writes a raw binary that can be `.incbin`'d via `macro_bitmap_make_buffered`.
 
 ## Reference
 
