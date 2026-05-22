@@ -19,6 +19,7 @@ GS_PLAY:            equ 5    ; gameplay
 GS_DYING:           equ 6    ; death animation  (stub)
 GS_LEVEL_CLEAR:     equ 7    ; maze flash       (stub)
 GS_GAME_OVER:       equ 8    ; "GAME OVER"      (stub)
+GS_ATTRACT_DEMO:    equ 9    ; AI-driven Pac demo in the attract cycle (#11)
 
 game_state:         db GS_ATTRACT_SPLASH
 game_state_entered: db 0      ; 1 = enter already ran for current state
@@ -70,6 +71,8 @@ state_call_enter:
     jp z, state_level_clear_enter
     cp GS_GAME_OVER
     jp z, state_game_over_enter
+    cp GS_ATTRACT_DEMO
+    jp z, state_attract_demo_enter
     ret
 
 state_call_tick:
@@ -92,4 +95,6 @@ state_call_tick:
     jp z, state_level_clear_tick
     cp GS_GAME_OVER
     jp z, state_game_over_tick
+    cp GS_ATTRACT_DEMO
+    jp z, state_attract_demo_tick
     ret
