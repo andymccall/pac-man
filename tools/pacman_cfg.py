@@ -1,39 +1,84 @@
 #!/usr/bin/env python3
 """
 pacman_cfg.py — Inspect and edit PACMAN.CFG, the binary settings + high
-score file written by the game (see src/includes/game/config.inc).
+score table file written by the game (see src/includes/game/config.inc).
 
-File layout (16 bytes):
+File layout (schema v2, 80 bytes):
     offset  size  field
     0       2     magic 'P','C'
-    2       1     schema version (0x01)
+    2       1     schema version (0x02)
     3       1     lives_start (DIP — 3 or 5)
-    4       3     high_score (24-bit LE)
-    7       9     reserved (zero — future DIPs)
+    4       60    score table — 10 entries × 6 bytes:
+                    +0..+2  initials (3 ASCII chars)
+                    +3..+5  score (24-bit LE)
+    64      16    reserved (zero — future DIPs)
 
 Subcommands:
-    dump PATH                  — decode and print every field.
+    dump PATH                  — decode and print every field including
+                                 the full top-10 table.
     edit PATH --lives N        — set lives_start (3 or 5) and rewrite.
+    edit PATH --reset-table    — restore the factory-default top-10.
 
-Editing the high score is intentionally not supported: the file's
-on-disk format is meant for setting machine DIPs, not faking scoreboard
-runs. Use the in-game GAME_OVER path to update the high score.
-
-Examples:
-    python tools/pacman_cfg.py dump PACMAN.CFG
-    python tools/pacman_cfg.py edit PACMAN.CFG --lives 5
+Editing the score table entry-by-entry is intentionally not supported:
+the file is meant for setting machine DIPs and resetting the table back
+to factory, not faking scoreboard runs. The in-game GAME_OVER path is
+how the table changes during play.
 """
 from __future__ import annotations
 
 import argparse
-import struct
 import sys
 from pathlib import Path
 
-CFG_SIZE = 16
+CFG_SIZE = 80
 CFG_MAGIC = b"PC"
-CFG_VERSION = 0x01
+CFG_VERSION = 0x02
 ALLOWED_LIVES = (3, 5)
+
+TABLE_OFFSET = 4
+TABLE_ENTRIES = 10
+TABLE_ENTRY_SZ = 6
+TABLE_BYTES = TABLE_ENTRIES * TABLE_ENTRY_SZ
+RESERVED_OFFSET = TABLE_OFFSET + TABLE_BYTES
+RESERVED_BYTES = CFG_SIZE - RESERVED_OFFSET
+
+# Must mirror cfg_factory_table in src/includes/game/config.inc — keep
+# in sync if either side changes.
+FACTORY_TABLE: list[tuple[str, int]] = [
+    ("AEM", 10000),
+    ("SIJ",  9000),
+    ("RTB",  8000),
+    ("SS7",  7000),
+    ("CLD",  6000),
+    ("747",   500),
+    ("FIL",   400),
+    ("SMM",   300),
+    ("BIL",   200),
+    ("MLK",   100),
+]
+
+
+def encode_table(entries: list[tuple[str, int]]) -> bytes:
+    out = bytearray()
+    for initials, score in entries:
+        if len(initials) != 3 or not initials.isascii():
+            raise ValueError(f"initials must be 3 ASCII chars: {initials!r}")
+        if not (0 <= score < (1 << 24)):
+            raise ValueError(f"score out of 24-bit range: {score}")
+        out.extend(initials.encode("ascii"))
+        out.extend(score.to_bytes(3, "little"))
+    assert len(out) == TABLE_BYTES
+    return bytes(out)
+
+
+def decode_table(buf: bytes) -> list[tuple[str, int]]:
+    rows = []
+    for i in range(TABLE_ENTRIES):
+        off = TABLE_OFFSET + i * TABLE_ENTRY_SZ
+        initials = buf[off:off + 3].decode("ascii", errors="replace")
+        score = int.from_bytes(buf[off + 3:off + 6], "little")
+        rows.append((initials, score))
+    return rows
 
 
 def load(path: Path) -> bytearray:
@@ -54,27 +99,20 @@ def load(path: Path) -> bytearray:
     return bytearray(data)
 
 
-def decode(buf: bytes) -> dict:
-    high = buf[4] | (buf[5] << 8) | (buf[6] << 16)
-    return {
-        "magic": buf[0:2].decode("ascii", errors="replace"),
-        "version": buf[2],
-        "lives_start": buf[3],
-        "high_score": high,
-        "reserved": bytes(buf[7:16]),
-    }
-
-
 def cmd_dump(args: argparse.Namespace) -> int:
     buf = load(args.path)
-    fields = decode(buf)
     print(f"file:        {args.path}")
-    print(f"magic:       {fields['magic']!r}")
-    print(f"version:     0x{fields['version']:02X}")
-    print(f"lives_start: {fields['lives_start']}  (DIP — editable)")
-    print(f"high_score:  {fields['high_score']:>7}  (read-only)")
-    reserved_hex = " ".join(f"{b:02X}" for b in fields["reserved"])
-    print(f"reserved:    {reserved_hex}  (9 bytes, future DIPs)")
+    print(f"magic:       {buf[0:2].decode('ascii', errors='replace')!r}")
+    print(f"version:     0x{buf[2]:02X}")
+    print(f"lives_start: {buf[3]}  (DIP — editable)")
+    print()
+    print("high-score table (read-only via --reset-table):")
+    print("  rank  initials      score")
+    for i, (initials, score) in enumerate(decode_table(buf), start=1):
+        print(f"  {i:>4}  {initials:<3}        {score:>6}")
+    print()
+    reserved_hex = " ".join(f"{b:02X}" for b in buf[RESERVED_OFFSET:CFG_SIZE])
+    print(f"reserved:    {reserved_hex}")
     return 0
 
 
@@ -83,16 +121,21 @@ def cmd_edit(args: argparse.Namespace) -> int:
     changed = False
 
     if args.lives is not None:
-        if args.lives not in ALLOWED_LIVES:
-            raise SystemExit(
-                f"--lives must be one of {ALLOWED_LIVES}, got {args.lives}"
-            )
         if buf[3] != args.lives:
             print(f"lives_start: {buf[3]} -> {args.lives}")
             buf[3] = args.lives
             changed = True
         else:
             print(f"lives_start: already {args.lives}, no change")
+
+    if args.reset_table:
+        factory = encode_table(FACTORY_TABLE)
+        if bytes(buf[TABLE_OFFSET:TABLE_OFFSET + TABLE_BYTES]) != factory:
+            print("score table: resetting to factory defaults")
+            buf[TABLE_OFFSET:TABLE_OFFSET + TABLE_BYTES] = factory
+            changed = True
+        else:
+            print("score table: already factory defaults, no change")
 
     if not changed:
         print("nothing to write")
@@ -105,7 +148,7 @@ def cmd_edit(args: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Inspect and edit PACMAN.CFG (DIP settings only — high score is read-only).",
+        description="Inspect and edit PACMAN.CFG (DIP + score-table reset only — individual entries are read-only).",
     )
     subs = parser.add_subparsers(dest="cmd", required=True)
 
@@ -113,13 +156,18 @@ def main(argv: list[str] | None = None) -> int:
     p_dump.add_argument("path", type=Path)
     p_dump.set_defaults(func=cmd_dump)
 
-    p_edit = subs.add_parser("edit", help="Write back DIP fields.")
+    p_edit = subs.add_parser("edit", help="Write back DIP fields or reset the table.")
     p_edit.add_argument("path", type=Path)
     p_edit.add_argument(
         "--lives",
         type=int,
         choices=ALLOWED_LIVES,
         help="Set starting lives (3 or 5).",
+    )
+    p_edit.add_argument(
+        "--reset-table",
+        action="store_true",
+        help="Restore the factory-default top-10 high-score table.",
     )
     p_edit.set_defaults(func=cmd_edit)
 
