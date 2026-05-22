@@ -10,7 +10,7 @@
 ;     bitmaps appended to each ghost's frame list).
 
 state_play_animation_counter: db 10
-state_play_animation_period:  equ 10
+state_play_animation_period:  equ 8       ; #31: was 10 (~167 ms/frame); 8 matches arcade footage (~133 ms)
 state_play_normal_anim_phase: db 0       ; 0..7 — cycles through normal frames
 state_play_fright_anim_phase: db 0       ; 0..3 — low bit = wiggle, high bit = blue/white
 
