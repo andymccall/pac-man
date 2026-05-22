@@ -21,6 +21,7 @@ GS_LEVEL_CLEAR:     equ 7    ; maze flash       (stub)
 GS_GAME_OVER:       equ 8    ; "GAME OVER"      (stub)
 GS_ATTRACT_DEMO:    equ 9    ; AI-driven Pac demo in the attract cycle (#11)
 GS_INTERMISSION:    equ 10   ; per-level cutscene (acts 1/2/3, #13)
+GS_ATTRACT_SCORES:  equ 11   ; top-10 high-score table screen (#29)
 
 game_state:         db GS_ATTRACT_SPLASH
 game_state_entered: db 0      ; 1 = enter already ran for current state
@@ -76,6 +77,8 @@ state_call_enter:
     jp z, state_attract_demo_enter
     cp GS_INTERMISSION
     jp z, state_intermission_enter
+    cp GS_ATTRACT_SCORES
+    jp z, state_attract_scores_enter
     ret
 
 state_call_tick:
@@ -102,4 +105,6 @@ state_call_tick:
     jp z, state_attract_demo_tick
     cp GS_INTERMISSION
     jp z, state_intermission_tick
+    cp GS_ATTRACT_SCORES
+    jp z, state_attract_scores_tick
     ret

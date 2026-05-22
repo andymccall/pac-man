@@ -267,9 +267,12 @@ state_attract_demo_tick:
                                         ; ATTRACT_CHARS via demo_active
 
 @demo_to_attract:
+    ; Demo timed out or cleared the maze somehow — same exit as
+    ; the dying.inc demo branch: hand off to the high-score table,
+    ; which loops back to ATTRACT_CHARS.
     xor a
     ld (demo_active), a
-    ld a, GS_ATTRACT_CHARS
+    ld a, GS_ATTRACT_SCORES
     jp game_state_set
 
 ; @poll_input — C deposits a credit and jumps to PLAYER_SELECT; 1 / 2

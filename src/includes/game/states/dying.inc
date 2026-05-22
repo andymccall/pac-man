@@ -24,7 +24,7 @@
 
 state_dying_freeze_frames: equ 60     ; ~1 s @ 60 fps — arcade pre-anim pause
 state_dying_anim_period:   equ 8      ; ticks per death frame (~0.13 s)
-state_dying_post_hold:     equ 60     ; #31: was 30 (~500 ms); 60 (~1 s) matches arcade footage
+state_dying_post_hold:     equ 30     ; ticks held on the last frame
 
 state_dying_freeze_timer: db 0        ; ticks remaining in the pre-anim freeze
 state_dying_anim_index:   db 0        ; 0..10 — death frame currently shown
@@ -151,7 +151,11 @@ state_dying_tick:
     ld a, GS_GAME_OVER
     jp game_state_set
 @demo_done:
+    ; Demo Pac just died — route through the high-score table screen,
+    ; which then loops back to ATTRACT_CHARS. The arcade attract cycle
+    ; shows the table between the demo and the next character reveal
+    ; (see attract_scores.inc).
     xor a
     ld (demo_active), a
-    ld a, GS_ATTRACT_CHARS
+    ld a, GS_ATTRACT_SCORES
     jp game_state_set
