@@ -36,10 +36,104 @@ pac_anim_counter:  db pac_anim_period
 
 ; Frames remaining in the post-eat stall. Arcade Pac freezes briefly
 ; when he eats a pellet — 1 frame for a regular pellet, 3 frames for
-; a power pellet — giving ghosts a tiny window to catch up. pellet_eat
-; writes the appropriate value here; pac_step decrements and returns
-; early while > 0.
+; a power pellet — giving ghosts a tiny window to catch up. pac_step
+; decrements and returns early while > 0; pellet_eat writes the
+; appropriate value.
 pac_stall_frames:  db 0
+
+; --- Per-level sub-pixel speed (#22) ---------------------------------------
+;
+; Pac doesn't always advance one pixel per frame on the arcade — there's
+; a per-level speed multiplier (80–100%), with a separate "fright active"
+; variant. We model this with a Q8.8 fixed-point accumulator: each frame
+; we add pac_speed_value to pac_speed_accum, and only advance one pixel
+; when the high byte of the accumulator overflows (i.e. when we've
+; accumulated a whole pixel's worth of motion).
+;
+;   256 / 0x0100 → 100% → 1.0 px/frame (today's behaviour; level 5+)
+;   243 / 0x00F3 →  95% → fright at L2..4
+;   230 / 0x00E6 →  90% → normal at L2..4 / L21+, fright at L1
+;   205 / 0x00CD →  80% → normal at L1
+;
+; pac_speed_normal / pac_speed_fright are set per-level by
+; pac_speed_init_for_level. pac_speed_value mirrors whichever is active
+; (normal at level start; swapped to fright by fright_activate, back to
+; normal by fright_tick-on-expiry / ghost_ai_init).
+;
+; 3-byte (`dl`) allocations because `ld (var), hl` in ADL writes all 3
+; bytes — a `dw` would spill HLU into the following variable (#54).
+
+PAC_SPEED_80:      equ $00CD
+PAC_SPEED_90:      equ $00E6
+PAC_SPEED_95:      equ $00F3
+PAC_SPEED_100:     equ $0100
+
+pac_speed_accum:   dl 0
+pac_speed_value:   dl PAC_SPEED_100
+pac_speed_normal:  dl PAC_SPEED_100
+pac_speed_fright:  dl PAC_SPEED_100
+
+; pac_speed_init_for_level — populate pac_speed_normal / pac_speed_fright
+; from current_level using the arcade Pac-Man Dossier brackets, and
+; reset pac_speed_value to the normal speed. Called from level_init.
+; Destroys: af, hl
+pac_speed_init_for_level:
+    ld a, (current_level)
+    cp 21
+    jr nc, @lvl_21_plus
+    cp 5
+    jr nc, @lvl_5_20
+    cp 2
+    jr nc, @lvl_2_4
+    ; Level 1 — slowest. Normal 80%, fright 90%.
+    ld hl, PAC_SPEED_80
+    ld (pac_speed_normal), hl
+    ld hl, PAC_SPEED_90
+    ld (pac_speed_fright), hl
+    jr @select_normal
+@lvl_2_4:
+    ld hl, PAC_SPEED_90
+    ld (pac_speed_normal), hl
+    ld hl, PAC_SPEED_95
+    ld (pac_speed_fright), hl
+    jr @select_normal
+@lvl_5_20:
+    ld hl, PAC_SPEED_100
+    ld (pac_speed_normal), hl
+    ld (pac_speed_fright), hl
+    jr @select_normal
+@lvl_21_plus:
+    ; Past L20 the arcade caps Pac at 90% with no effective fright
+    ; (power pellets never activate the timer). Store 90% for both so
+    ; even if fright_active gets set the speed doesn't change.
+    ld hl, PAC_SPEED_90
+    ld (pac_speed_normal), hl
+    ld (pac_speed_fright), hl
+@select_normal:
+    ld hl, (pac_speed_normal)
+    ld (pac_speed_value), hl
+    ; Clear the accumulator so the new level starts on a whole-pixel
+    ; tick rather than mid-fraction from the previous level.
+    ld hl, 0
+    ld (pac_speed_accum), hl
+    ret
+
+; pac_speed_select_fright — switch active speed to the fright variant.
+; Called from fright_activate.
+; Destroys: af, hl
+pac_speed_select_fright:
+    ld hl, (pac_speed_fright)
+    ld (pac_speed_value), hl
+    ret
+
+; pac_speed_select_normal — switch active speed back to normal. Called
+; from fright_tick on expiry, and from ghost_ai_init as a defensive
+; reset for the "died during fright → respawn" path.
+; Destroys: af, hl
+pac_speed_select_normal:
+    ld hl, (pac_speed_normal)
+    ld (pac_speed_value), hl
+    ret
 
 ; 24-bit storage so ADL-mode loads are clean; values logically 16-bit.
 sprite_x:   dl 250
@@ -489,6 +583,21 @@ pac_step:
     ld (pac_stall_frames), a
     ret
 @no_stall:
+
+    ; Sub-pixel speed gate (#22). Add pac_speed_value to the Q8.8
+    ; accumulator; the high byte of the result is "whole pixels this
+    ; frame" (0 or 1 for our speeds, which never exceed 256 = 1.0
+    ; px/frame). Skip the rest of pac_step when no whole pixel has
+    ; accumulated this frame — that's how level-1 80% feels slower
+    ; than level-5 100% on the arcade.
+    ld hl, (pac_speed_accum)
+    ld bc, (pac_speed_value)
+    add hl, bc
+    ld a, h
+    ld h, 0                              ; carry only the fractional part
+    ld (pac_speed_accum), hl
+    or a
+    ret z                                ; no pixel this frame
 
     ld a, (pac_dir)
     or a

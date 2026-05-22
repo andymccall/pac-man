@@ -230,6 +230,11 @@ ghost_ai_init:
     ld hl, 0
     ld (fright_timer), hl
 
+    ; Pac's per-level speed (#22): defensive reset to normal so a
+    ; respawn after a "died during fright" doesn't carry the fright
+    ; speed into the next life. No-op if Pac is already at normal.
+    call pac_speed_select_normal
+
     ; Blinky — outside the house, above the door.
     ld ix, blinky_state
     ld bc, 250
@@ -359,6 +364,12 @@ fright_activate:
     ld (fright_eaten_count), a
     ld (state_play_fright_anim_phase), a   ; restart blink at frame 8
 
+    ; Swap Pac to the fright-active speed for this level (#22).
+    ; pac_speed_select_normal in fright_tick (on expiry) reverses it;
+    ; ghost_ai_init also resets to normal as a defensive measure for
+    ; the "died during fright → respawn" path.
+    call pac_speed_select_fright
+
     ; Clear post-eaten flags — a new power pellet makes all surviving
     ; ghosts (including any regenerated from a previous fright) blue again.
     ld (blinky_state + GS_POST_EATEN), a
@@ -403,11 +414,12 @@ fright_tick:
     sbc hl, de
     ret nz                        ; still ticking
 
-    ; Expired. Clear the active flag and reapply per-ghost frames:
-    ; non-eaten ghosts swap back to their normal colours, eaten ghosts
-    ; stay on their eyes frame.
+    ; Expired. Clear the active flag, swap Pac back to his normal-mode
+    ; speed (#22), and reapply per-ghost frames: non-eaten ghosts swap
+    ; back to their normal colours, eaten ghosts stay on their eyes frame.
     xor a
     ld (fright_active), a
+    call pac_speed_select_normal
     jp ghosts_animate
 
 ; ---------------------------------------------------------------------------
