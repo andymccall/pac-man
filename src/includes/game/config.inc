@@ -1,24 +1,28 @@
 ; engine/config.inc - Persistent settings + high-score table via PACMAN.CFG.
 ;
-; Single binary file, 80 bytes, schema v2. Modelled on from-the-dead's
+; Single binary file, 80 bytes, schema v3. Modelled on from-the-dead's
 ; OPT pattern. Loaded once at boot (config_load); written when a run
 ; qualifies for the top-10 (config_high_score_commit) and on first-boot
 ; defaults.
 ;
 ; Layout (offsets):
 ;   0..1   magic 'P','C'
-;   2      schema version (0x02)
+;   2      schema version (0x03)
 ;   3      cfg_lives_start (DIP — 3 or 5)
 ;   4..63  cfg_score_table — 10 entries × 6 bytes:
 ;            entry N at offset 4 + N*6:
 ;              +0..+2  initials (3 ASCII chars)
 ;              +3..+5  score (24-bit LE)
 ;          Entries are kept sorted high → low by score; entry 0 is the top.
-;   64..79 reserved (zero — future DIPs)
+;   64     cfg_show_score_table (DIP — 0 = off [arcade-faithful default],
+;          1 = show the GS_ATTRACT_SCORES screen between DEMO and CHARS).
+;          The 1980 cabinet had no top-10 screen; the table is a deliberate
+;          non-arcade affordance, off by default.
+;   65..79 reserved (zero — future DIPs)
 ;
-; Schema v1 (16 bytes, pre-table) was the first persistence drop; it is
-; treated as "stale, reset to factory defaults" — see config_load. The
-; tool tools/pacman_cfg.py can read both shapes for inspection.
+; Older schemas (v1 16 bytes, v2 80 bytes) are treated as "stale, reset
+; to factory defaults" — see config_load. The tool tools/pacman_cfg.py
+; can read the current shape for inspection.
 ;
 ; MOS file API (rst.lil $08; mos_load / mos_save defined in mos_api.inc):
 ;   mos_load — HLU = filename (zero-term), DEU = dest, BCU = max size
@@ -28,9 +32,14 @@
 CFG_SIZE:           equ 80
 CFG_MAGIC_0:        equ 'P'
 CFG_MAGIC_1:        equ 'C'
-CFG_VERSION:        equ $02
+CFG_VERSION:        equ $03
 
 CFG_LIVES_DEFAULT:  equ 3
+
+; Default for the score-table-screen DIP. 0 = off (arcade-faithful 1980
+; behaviour, no GS_ATTRACT_SCORES in the attract rotation). 1 = on. The
+; Python tool (tools/pacman_cfg.py --show-score-table on) flips it.
+CFG_SHOW_TABLE_DEFAULT: equ 0
 
 ; Score-table geometry. Kept as named constants so the attract-mode
 ; renderer and the insert logic agree on layout.
@@ -89,9 +98,13 @@ config_new:
     ld bc, CFG_TABLE_BYTES
     ldir
 
-    ; Zero the reserved tail.
+    ; DIP: score-table screen — default to off (arcade-faithful).
+    ld a, CFG_SHOW_TABLE_DEFAULT
+    ld (cfg_show_score_table), a
+
+    ; Zero the reserved tail (15 bytes — show-table claimed offset 64).
     ld hl, cfg_reserved
-    ld b, 16
+    ld b, 15
 @zloop:
     ld (hl), 0
     inc hl
@@ -235,6 +248,21 @@ config_high_score_commit:
     scf
     ret
 
+; config_post_demo_state — pick the state to enter after the attract-mode
+; demo ends. The 1980 arcade goes straight back to the character reveal;
+; the optional top-10 table (#29) is a deliberate non-arcade extra, only
+; visited when the cfg_show_score_table DIP is on.
+;
+; Returns: A = GS_ATTRACT_SCORES (DIP on) or GS_ATTRACT_CHARS (DIP off).
+; Destroys: af
+config_post_demo_state:
+    ld a, (cfg_show_score_table)
+    or a
+    ld a, GS_ATTRACT_CHARS
+    ret z
+    ld a, GS_ATTRACT_SCORES
+    ret
+
 ; Storage -----------------------------------------------------------------
 ;
 ; The 80-byte buffer is the on-disk image. Field labels alias into it so
@@ -246,7 +274,8 @@ cfg_magic:              .ds 2
 cfg_schema_version:     .ds 1
 cfg_lives_start:        .ds 1
 cfg_score_table:        .ds CFG_TABLE_BYTES        ; 60 bytes (10 × 6)
-cfg_reserved:           .ds 16
+cfg_show_score_table:   .ds 1                       ; DIP — 0 = off, 1 = on
+cfg_reserved:           .ds 15                      ; future DIPs
 
 ; Factory-default score table. Top six slots are personalised — credits
 ; to the folks who helped along the way. Bottom four (the 100..400 pt

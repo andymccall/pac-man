@@ -151,11 +151,11 @@ state_dying_tick:
     ld a, GS_GAME_OVER
     jp game_state_set
 @demo_done:
-    ; Demo Pac just died — route through the high-score table screen,
-    ; which then loops back to ATTRACT_CHARS. The arcade attract cycle
-    ; shows the table between the demo and the next character reveal
-    ; (see attract_scores.inc).
+    ; Demo Pac just died — DIP picks where we go next. Arcade-faithful
+    ; default sends us back to ATTRACT_CHARS; with the optional top-10
+    ; table enabled we visit ATTRACT_SCORES first (see config.inc and
+    ; attract_scores.inc).
     xor a
     ld (demo_active), a
-    ld a, GS_ATTRACT_SCORES
+    call config_post_demo_state
     jp game_state_set
