@@ -9,6 +9,12 @@
 pellet_points_value:        equ 10
 power_pellet_points_value:  equ 50
 
+; Post-eat stall lengths. Arcade Pac freezes for these many frames
+; after eating, letting ghosts close the gap. Power pellets stall
+; longer — the player gets a beat to react before fright kicks in.
+pellet_stall_frames:        equ 1
+power_pellet_stall_frames:  equ 3
+
 ; player_1_score: 24-bit binary score, little-endian (low byte first).
 player_1_score:  dl 0
 player_2_score:  dl 0
@@ -163,10 +169,14 @@ pellet_eat:
     cp 2
     jr z, @power
     ld hl, pellet_points_value
+    ld a, pellet_stall_frames
+    ld (pac_stall_frames), a
     jr @add_score
 @power:
     call fright_activate
     ld hl, power_pellet_points_value
+    ld a, power_pellet_stall_frames
+    ld (pac_stall_frames), a
 @add_score:
     ld de, (player_1_score)
     add hl, de
