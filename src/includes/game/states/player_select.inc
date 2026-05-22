@@ -14,12 +14,19 @@
 
 PLAYER_SELECT_DEMO_TIMEOUT: equ 600       ; 10 s at 60 Hz
 
+; PUSH START BUTTON blink (#27). Toggle every PUSH_START_BLINK_PERIOD
+; frames so a full on→off→on cycle takes ~2 × PERIOD = 60 frames ≈ 1 Hz.
+PUSH_START_BLINK_PERIOD:  equ 30          ; frames per visible / hidden phase
+
 num_players: db 0
 ; 3-byte allocation: `ld (player_select_demo_timer), hl` and the
 ; matching read are 24-bit in ADL, so a `dw` here would spill HLU into
 ; the next byte — which is `state_player_select_enter`'s first code
 ; byte. Same flavour of bug as #54's chase_pac_accum / chase_ghost_accum.
 player_select_demo_timer: dl PLAYER_SELECT_DEMO_TIMEOUT
+
+push_start_blink_counter: db PUSH_START_BLINK_PERIOD
+push_start_visible:       db 1            ; 1 = drawn yellow, 0 = drawn black
 
 state_player_select_enter:
     ld a, SPRITE_INKY_ID
@@ -55,6 +62,13 @@ state_player_select_enter:
     ld hl, PLAYER_SELECT_DEMO_TIMEOUT
     ld (player_select_demo_timer), hl
 
+    ; Reset the PUSH START BUTTON blink so each entry starts with the
+    ; prompt visible.
+    ld a, PUSH_START_BLINK_PERIOD
+    ld (push_start_blink_counter), a
+    ld a, 1
+    ld (push_start_visible), a
+
     ; Match the BASHFUL (Inky) cyan used on the previous attract screen.
     macro_text_set_color 0x16
     ld hl, one_player_message
@@ -71,7 +85,27 @@ state_player_select_tick:
     call display_2up
     call credit_display
 
+    ; PUSH START BUTTON — blink at ~1 Hz. Tick the counter; on
+    ; underflow flip the visibility flag. Each frame paint the text
+    ; in either yellow (visible) or black (hidden) — black-on-black
+    ; overwrites the previous yellow cells, giving a clean blink
+    ; without erasing or re-clearing the whole region.
+    ld hl, push_start_blink_counter
+    dec (hl)
+    jr nz, @push_start_paint
+    ld (hl), PUSH_START_BLINK_PERIOD
+    ld a, (push_start_visible)
+    xor 1
+    ld (push_start_visible), a
+@push_start_paint:
+    ld a, (push_start_visible)
+    or a
+    jr z, @push_start_hidden
     macro_text_set_color VDU_COL_BRIGHT_YELLOW
+    jr @push_start_draw
+@push_start_hidden:
+    macro_text_set_color VDU_COL_BLACK
+@push_start_draw:
     ld hl, push_start_data
     call vdu_text_print
 
