@@ -20,13 +20,17 @@ FRUIT_TILE_ROW:         equ 17         ; sprite_y=200 → row 17
 FRUIT_TILE_COL_A:       equ 13         ; sprite spans cols 13-14
 FRUIT_TILE_COL_B:       equ 14
 
-CHERRY_POINTS:          equ 100
-
 ; On-eat score popup (#63). Held for ~2 s @ 60 fps, then auto-hidden
 ; by score_popup_tick. Longer than the ghost-eat popup (60 frames) —
 ; the fruit popup doesn't pause gameplay so it needs the longer
 ; window to be legible.
 FRUIT_SCORE_POPUP_FRAMES: equ 120
+
+; Sentinel returned by fruit_popup_frame_for_level for levels whose
+; popup asset doesn't exist yet — 2000 / 3000 / 5000 need the
+; deferred two-sprite composition. Callers skip the popup display
+; when they see this value.
+FRUIT_POPUP_FRAME_NONE: equ 0xFF
 
 ; Per-level appearance bookkeeping. fruit_timer counts the visible
 ; duration down to 0; fruit_shown_count tracks how many appearances
@@ -35,6 +39,15 @@ FRUIT_SCORE_POPUP_FRAMES: equ 120
 fruit_timer:       dl 0
 fruit_shown_count: db 0
 fruit_active:      db 0                ; 1 while the sprite is on screen
+
+; Cached level-aware values set by fruit_activate (#62). Used by
+; hide / tick / collision_check so they don't each have to re-look
+; the fruit up. Defaulted to cherry / 100 / frame 6 so a never-
+; activated fruit being hidden (e.g. on state_ready_enter) still
+; selects the cherry sprite to hide.
+fruit_active_sprite_id:   db SPRITE_CHERRY_0_ID
+fruit_active_popup_frame: db 6                       ; "100" popup frame
+fruit_active_points:      dl 100
 
 ; fruit_init — full reset for a new game / new level. Clears the
 ; per-level appearance counter so the 70- and 170-pellet thresholds can
@@ -56,7 +69,7 @@ fruit_hide_now:
     ld (fruit_active), a
     ld hl, 0
     ld (fruit_timer), hl
-    ld a, SPRITE_CHERRY_0_ID
+    ld a, (fruit_active_sprite_id)
     call vdu_sprite_select
     jp vdu_sprite_hide
 
@@ -90,7 +103,21 @@ fruit_activate:
     ld (fruit_shown_count), a
     ld hl, FRUIT_DURATION
     ld (fruit_timer), hl
-    ld a, SPRITE_CHERRY_0_ID
+
+    ; Look up level-aware sprite / points / popup-frame and cache so
+    ; hide / tick / collision_check use the right values for the
+    ; current level (#62).
+    ld a, (current_level)
+    call fruit_sprite_id_for_level
+    ld (fruit_active_sprite_id), a
+    ld a, (current_level)
+    call fruit_popup_frame_for_level
+    ld (fruit_active_popup_frame), a
+    ld a, (current_level)
+    call fruit_points_for_level
+    ld (fruit_active_points), hl
+
+    ld a, (fruit_active_sprite_id)
     call vdu_sprite_select
     ld bc, FRUIT_X
     ld de, FRUIT_Y
@@ -114,7 +141,7 @@ fruit_tick:
     ; Timer expired — hide the sprite.
     xor a
     ld (fruit_active), a
-    ld a, SPRITE_CHERRY_0_ID
+    ld a, (fruit_active_sprite_id)
     call vdu_sprite_select
     jp vdu_sprite_hide
 
@@ -145,8 +172,8 @@ fruit_collision_check:
     ret nz
 
 @eat:
-    ; Award points.
-    ld hl, CHERRY_POINTS
+    ; Award points — level-aware via fruit_active_points (#62).
+    ld hl, (fruit_active_points)
     ld de, (player_1_score)
     add hl, de
     ld (player_1_score), hl
@@ -156,19 +183,21 @@ fruit_collision_check:
     ld (fruit_active), a
     ld hl, 0
     ld (fruit_timer), hl
-    ld a, SPRITE_CHERRY_0_ID
+    ld a, (fruit_active_sprite_id)
     call vdu_sprite_select
     call vdu_sprite_hide
 
-    ; Score popup (#63). Show the points value at the fruit's
-    ; position; score_popup_tick (called from state_play_tick via
-    ; ghost_ai_tick) hides it on expiry. Cherry → "100" → frame 6
-    ; (200/400/800/1600 = frames 0-3, 10/50/100/... = 4-10). When
-    ; #62 lands the frame index will be looked up per-level alongside
-    ; the points value.
+    ; Score popup (#63 + #62). Skip if this level's popup asset isn't
+    ; available yet (levels 8+ — 2000/3000/5000 need the deferred
+    ; two-sprite composition).
+    ld a, (fruit_active_popup_frame)
+    cp FRUIT_POPUP_FRAME_NONE
+    ret z
+
+    push af
     ld a, SPRITE_SCORE_POPUP_ID
     call vdu_sprite_select
-    ld a, 6                             ; frame 6 = SPRITE_SCORE_100
+    pop af
     call vdu_sprite_select_frame
     ld bc, FRUIT_X
     ld de, FRUIT_Y
@@ -312,4 +341,136 @@ fruit_for_level:
     ret
 @key:
     ld hl, SPRITE_KEY_0
+    ret
+
+; fruit_sprite_id_for_level — A = level (1..); A = the sprite-plane
+; ID of that level's bonus fruit. Same branch table as
+; fruit_for_level, but returns the SPRITE_*_0_ID (used for the
+; movable sprite in the maze) rather than the bitmap buffer id
+; (used for the static HUD strip).
+; Destroys: af
+fruit_sprite_id_for_level:
+    cp 2
+    jr nc, @not_cherry
+    ld a, SPRITE_CHERRY_0_ID
+    ret
+@not_cherry:
+    cp 3
+    jr nc, @not_berry
+    ld a, SPRITE_BERRY_0_ID
+    ret
+@not_berry:
+    cp 4
+    jr nc, @not_orange
+    ld a, SPRITE_ORANGE_0_ID
+    ret
+@not_orange:
+    cp 6
+    jr nc, @not_apple
+    ld a, SPRITE_APPLE_0_ID
+    ret
+@not_apple:
+    cp 8
+    jr nc, @not_melon
+    ld a, SPRITE_MELON_0_ID
+    ret
+@not_melon:
+    cp 10
+    jr nc, @not_galaxian
+    ld a, SPRITE_GALAXIAN_0_ID
+    ret
+@not_galaxian:
+    cp 12
+    jr nc, @key
+    ld a, SPRITE_BELL_0_ID
+    ret
+@key:
+    ld a, SPRITE_KEY_0_ID
+    ret
+
+; fruit_points_for_level — A = level (1..); HL = points awarded for
+; eating that level's bonus fruit. Per the arcade:
+;   100 / 300 / 500 / 700 / 1000 / 2000 / 3000 / 5000
+; Destroys: af, hl
+fruit_points_for_level:
+    cp 2
+    jr nc, @not_cherry
+    ld hl, 100
+    ret
+@not_cherry:
+    cp 3
+    jr nc, @not_berry
+    ld hl, 300
+    ret
+@not_berry:
+    cp 4
+    jr nc, @not_orange
+    ld hl, 500
+    ret
+@not_orange:
+    cp 6
+    jr nc, @not_apple
+    ld hl, 700
+    ret
+@not_apple:
+    cp 8
+    jr nc, @not_melon
+    ld hl, 1000
+    ret
+@not_melon:
+    cp 10
+    jr nc, @not_galaxian
+    ld hl, 2000
+    ret
+@not_galaxian:
+    cp 12
+    jr nc, @key
+    ld hl, 3000
+    ret
+@key:
+    ld hl, 5000
+    ret
+
+; fruit_popup_frame_for_level — A = level (1..); A = the score-popup
+; sprite frame index to plot when this level's fruit is eaten, or
+; FRUIT_POPUP_FRAME_NONE (0xFF) if no popup asset exists yet.
+;
+; Frame map within SPRITE_SCORE_POPUP_ID:
+;   frames 0-3  = ghost-eat (200 / 400 / 800 / 1600, cyan)
+;   frame  4    = 10        (currently unused — pellet eat?)
+;   frame  5    = 50        (currently unused — power-pellet eat?)
+;   frame  6    = 100       (cherry)
+;   frame  7    = 300       (berry)
+;   frame  8    = 500       (orange)
+;   frame  9    = 700       (apple)
+;   frame  10   = 1000      (melon)
+;   2000 / 3000 / 5000 popups are deferred — two-sprite composition.
+; Destroys: af
+fruit_popup_frame_for_level:
+    cp 2
+    jr nc, @not_cherry
+    ld a, 6                            ; 100
+    ret
+@not_cherry:
+    cp 3
+    jr nc, @not_berry
+    ld a, 7                            ; 300
+    ret
+@not_berry:
+    cp 4
+    jr nc, @not_orange
+    ld a, 8                            ; 500
+    ret
+@not_orange:
+    cp 6
+    jr nc, @not_apple
+    ld a, 9                            ; 700
+    ret
+@not_apple:
+    cp 8
+    jr nc, @no_popup
+    ld a, 10                           ; 1000
+    ret
+@no_popup:
+    ld a, FRUIT_POPUP_FRAME_NONE
     ret
