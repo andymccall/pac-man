@@ -34,6 +34,13 @@ pac_desired_dir:   db DIR_NONE
 pac_anim_frame:    db 0
 pac_anim_counter:  db pac_anim_period
 
+; Frames remaining in the post-eat stall. Arcade Pac freezes briefly
+; when he eats a pellet — 1 frame for a regular pellet, 3 frames for
+; a power pellet — giving ghosts a tiny window to catch up. pellet_eat
+; writes the appropriate value here; pac_step decrements and returns
+; early while > 0.
+pac_stall_frames:  db 0
+
 ; 24-bit storage so ADL-mode loads are clean; values logically 16-bit.
 sprite_x:   dl 250
 sprite_y:   dl 248
@@ -472,6 +479,17 @@ pac_nudge:
 ; when blocked. No-op if pac_dir is NONE.
 ; Destroys: af, bc, de, hl
 pac_step:
+    ; Post-eat stall (#23): freeze Pac for the configured number of
+    ; frames after eating a pellet. Ghosts continue moving — only
+    ; Pac's movement+animation pauses.
+    ld a, (pac_stall_frames)
+    or a
+    jr z, @no_stall
+    dec a
+    ld (pac_stall_frames), a
+    ret
+@no_stall:
+
     ld a, (pac_dir)
     or a
     ret z
