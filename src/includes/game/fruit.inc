@@ -22,6 +22,12 @@ FRUIT_TILE_COL_B:       equ 14
 
 CHERRY_POINTS:          equ 100
 
+; On-eat score popup (#63). Held for ~2 s @ 60 fps, then auto-hidden
+; by score_popup_tick. Longer than the ghost-eat popup (60 frames) —
+; the fruit popup doesn't pause gameplay so it needs the longer
+; window to be legible.
+FRUIT_SCORE_POPUP_FRAMES: equ 120
+
 ; Per-level appearance bookkeeping. fruit_timer counts the visible
 ; duration down to 0; fruit_shown_count tracks how many appearances
 ; we've triggered this level (0, 1, or 2) so the same threshold doesn't
@@ -152,7 +158,25 @@ fruit_collision_check:
     ld (fruit_timer), hl
     ld a, SPRITE_CHERRY_0_ID
     call vdu_sprite_select
-    jp vdu_sprite_hide
+    call vdu_sprite_hide
+
+    ; Score popup (#63). Show the points value at the fruit's
+    ; position; score_popup_tick (called from state_play_tick via
+    ; ghost_ai_tick) hides it on expiry. Cherry → "100" → frame 6
+    ; (200/400/800/1600 = frames 0-3, 10/50/100/... = 4-10). When
+    ; #62 lands the frame index will be looked up per-level alongside
+    ; the points value.
+    ld a, SPRITE_SCORE_POPUP_ID
+    call vdu_sprite_select
+    ld a, 6                             ; frame 6 = SPRITE_SCORE_100
+    call vdu_sprite_select_frame
+    ld bc, FRUIT_X
+    ld de, FRUIT_Y
+    call vdu_sprite_move_abs
+    call vdu_sprite_show
+    ld a, FRUIT_SCORE_POPUP_FRAMES
+    ld (score_popup_timer), a
+    ret
 
 ; --- Fruit history HUD (#60) -----------------------------------------------
 ;

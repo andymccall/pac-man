@@ -361,11 +361,19 @@ vdu_game_data:
 
     macro_sprite_mark_hardware                  ; #15 — life icon
 
-    ; Score popup (200/400/800/1600 chain bonus for eating frightened ghosts).
+    ; Score popup (200/400/800/1600 chain bonus for eating frightened
+    ; ghosts in cyan, plus fruit-eat values 10..1000 in Pinky pink).
     macro_bitmap_make_buffered SPRITE_SCORE_200,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_200.rgba2"
     macro_bitmap_make_buffered SPRITE_SCORE_400,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_400.rgba2"
     macro_bitmap_make_buffered SPRITE_SCORE_800,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_800.rgba2"
     macro_bitmap_make_buffered SPRITE_SCORE_1600, SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_1600.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_10,   SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_10.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_50,   SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_50.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_100,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_100.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_300,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_300.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_500,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_500.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_700,  SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_700.rgba2"
+    macro_bitmap_make_buffered SPRITE_SCORE_1000, SPRITE_SCORE_WIDTH, SPRITE_SCORE_HEIGHT, "src/assets/score/score_1000.rgba2"
 
     macro_sprite_select_sprite SPRITE_SCORE_POPUP_ID
     macro_sprite_clear_current
@@ -373,6 +381,13 @@ vdu_game_data:
     macro_sprite_add_frame SPRITE_SCORE_400
     macro_sprite_add_frame SPRITE_SCORE_800
     macro_sprite_add_frame SPRITE_SCORE_1600
+    macro_sprite_add_frame SPRITE_SCORE_10
+    macro_sprite_add_frame SPRITE_SCORE_50
+    macro_sprite_add_frame SPRITE_SCORE_100
+    macro_sprite_add_frame SPRITE_SCORE_300
+    macro_sprite_add_frame SPRITE_SCORE_500
+    macro_sprite_add_frame SPRITE_SCORE_700
+    macro_sprite_add_frame SPRITE_SCORE_1000
 
     macro_sprite_mark_hardware                  ; #15 — score popup
 
