@@ -1,13 +1,17 @@
 ; Lives counter and on-screen display.
 ;
-; lives is initialised to LIVES_START (3) when a new game starts (from
-; state_player_select); decremented in state_dying_enter; checked there
-; to choose between respawn (READY) and game over (GAME_OVER).
+; lives is initialised to cfg_lives_start (3 by default, 5 via DIP) when a
+; new game starts (from state_player_select); decremented in
+; state_dying_enter; checked there to choose between respawn (READY) and
+; game over (GAME_OVER).
 ;
 ; The HUD shows one Pac-Man icon per remaining life along the bottom of
 ; the maze, just below the playfield.
 
-LIVES_START:     equ 3
+; Maximum starting lives — sets the width of the on-screen reserves strip
+; and the clear rect in lives_pop. The runtime cfg_lives_start can be 3
+; or 5; using the max here means the strip always has room for either.
+LIVES_MAX:       equ 5
 
 ; Bonus-life threshold. Arcade default is 10,000 points; arcade also has a
 ; DIP-switch for 15k/20k/none — deferred (see arcade-fidelity-backlog).
@@ -30,11 +34,11 @@ lives_display_y: equ 320
 
 lives_x_scratch: dl 0            ; current x while looping through icons
 
-; lives_init — set lives back to LIVES_START and clear the bonus-life
-; flag. Called on new game.
+; lives_init — set lives back to cfg_lives_start (from PACMAN.CFG; see
+; config.inc) and clear the bonus-life flag. Called on new game.
 ; Destroys: af
 lives_init:
-    ld a, LIVES_START
+    ld a, (cfg_lives_start)
     ld (lives), a
     xor a
     ld (bonus_life_awarded), a
@@ -105,7 +109,7 @@ lives_pop:
     ; project_ez80asm_no_precedence).
     ld bc, lives_display_x - origin_left
     ld de, lives_display_y - origin_top
-    ld ix, LIVES_START * SPRITE_PAC_MAN_LIFE_WIDTH + lives_display_x - origin_left - 1
+    ld ix, LIVES_MAX * SPRITE_PAC_MAN_LIFE_WIDTH + lives_display_x - origin_left - 1
     ld iy, lives_display_y + SPRITE_PAC_MAN_LIFE_HEIGHT - origin_top - 1
     call vdu_plot_filled_rect
 
