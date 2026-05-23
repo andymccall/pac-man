@@ -116,6 +116,21 @@ pac_speed_init_for_level:
     ; tick rather than mid-fraction from the previous level.
     ld hl, 0
     ld (pac_speed_accum), hl
+
+    ; Demo override: the attract-mode pac_script was recorded against
+    ; the pre-#22 flat 1 px/frame Pac. With L1 now correctly at 80%,
+    ; the route's narrow margin vs. the ghosts collapses and Pac is
+    ; caught well before reaching the canonical (3, 20) catch tile.
+    ; Restore 100% just for the demo (demo_active is set by
+    ; state_attract_demo_enter before level_init runs) so the route
+    ; plays out the way it was captured. Gameplay stays arcade.
+    ld a, (demo_active)
+    or a
+    ret z
+    ld hl, PAC_SPEED_100
+    ld (pac_speed_value), hl
+    ld (pac_speed_normal), hl
+    ld (pac_speed_fright), hl
     ret
 
 ; pac_speed_select_fright — switch active speed to the fright variant.
