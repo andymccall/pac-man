@@ -178,6 +178,9 @@ fruit_collision_check:
     add hl, de
     ld (player_1_score), hl
 
+    ; Short 3-note flourish — F5 → B5 → E6.
+    call melody_start_fruit
+
     ; Hide the fruit.
     xor a
     ld (fruit_active), a

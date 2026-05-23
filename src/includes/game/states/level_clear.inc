@@ -19,6 +19,10 @@ state_level_clear_phase_timer:  db LEVEL_CLEAR_PHASE_FRAMES
 state_level_clear_hold_timer:   db LEVEL_CLEAR_HOLD_FRAMES
 
 state_level_clear_enter:
+    ; Silence the siren while the maze flashes; state_play_enter will
+    ; restart it when the next level kicks off.
+    call siren_stop
+
     ld a, SPRITE_BLINKY_ID
     call vdu_sprite_select
     call vdu_sprite_hide

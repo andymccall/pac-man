@@ -137,6 +137,13 @@ pellet_eat:
     push de
     push hl
     call elroy_update
+
+    ; Waka-waka chomp (#10). Only fires on regular pellets — power
+    ; pellets will get their own sound later. pellet_eat_value is 1
+    ; for a regular pellet, 2 for a power pellet.
+    ld a, (pellet_eat_value)
+    cp 1
+    call z, audio_waka
     pop hl
     pop de
     pop bc

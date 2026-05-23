@@ -32,6 +32,7 @@
     include "src/includes/api/sprite.inc"
     include "src/includes/api/vdu_sprite.inc"
     include "src/includes/api/keyboard.inc"
+    include "src/includes/api/vdu_audio.inc"
     include "src/includes/api/macro_sprite.inc"
     include "src/includes/api/macro_text.inc"
     include "src/includes/api/macro_bitmap.inc"
@@ -57,6 +58,7 @@
     include "src/includes/game/fruit.inc"
     include "src/includes/game/lives.inc"
     include "src/includes/game/config.inc"
+    include "src/includes/game/audio.inc"
     include "src/includes/game/level.inc"
     include "src/includes/game/splash.inc"
     include "src/includes/game/credit.inc"
@@ -134,6 +136,10 @@ start:
     ; Upload + select the arcade font so every subsequent text output
     ; uses it instead of the MOS system font.
     call font_init
+
+    ; Audio (#10): set channel 1 to a square wave so the waka chomp has
+    ; the arcade's harmonics-rich timbre rather than the default sine.
+    call audio_init
 
     ; Persistent settings + high score. Loads PACMAN.CFG into RAM, or
     ; writes a defaults file on first boot / corruption. Must run before
