@@ -54,7 +54,12 @@ state_play_enter:
     ld bc, BANNER_READY_REL_X
     ld de, BANNER_REL_Y
     call vdu_bitmap_plot
-    ret
+
+    ; Background siren on channel 3 (#10). Re-fired on each PLAY entry
+    ; (new life, new level) so the long-duration note doesn't time out
+    ; during a real play session. siren_stop is called from non-PLAY
+    ; state enters that want silence.
+    jp siren_start
 
 state_play_tick:
     ; Active player's 1UP label blinks at ~1 Hz (#71). 2UP stays
@@ -69,6 +74,14 @@ state_play_tick:
     call power_pellets_blink_tick
     call fruit_tick
     call fruit_collision_check
+
+    ; Siren sweep is driven by the VDP's frequency envelope now —
+    ; nothing to tick from here.
+    ;
+    ; The fruit + bonus-life jingles drip-feed through the melody
+    ; player though, so ticking it here keeps those advancing while
+    ; the player is in PLAY. Cheap no-op when no melody is active.
+    call melody_tick
 
     ; Eaten-ghost freeze: hold movement, ghost AI, mode timer, and fright
     ; timer for EAT_FREEZE_DURATION frames after ghost_eat fires. HUD and

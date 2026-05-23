@@ -107,7 +107,11 @@ state_ready_enter:
     ld (state_ready_phase), a
     ld a, READY_PHASE_FRAMES
     ld (state_ready_timer), a
-    ret
+
+    ; Kick off the iconic intro melody. state_ready_tick gates the
+    ; phase-0 → phase-1 transition on melody_active, so we wait here
+    ; until the tune finishes rather than the fixed 2 s timer.
+    jp melody_start_ready
 
 ; @draw_static — paint the maze + pellets + READY banner + lives HUD
 ; onto the back buffer. Called once at state_ready_enter; the screen-
@@ -215,15 +219,25 @@ state_ready_tick:
     macro_text_set_color VDU_COL_WHITE
     call display_player_1_score
 
+    ; Phase-0 (announce) is gated on the melody finishing rather than a
+    ; fixed timer — the melody is the timing reference, and "life is
+    ; deducted when the tune ends" is what the arcade does. Phase-1
+    ; stays timer-driven.
+    ld a, (state_ready_phase)
+    cp READY_PHASE_ANNOUNCE
+    jr nz, @phase_pac_timer
+
+    ; Drip-feed the melody one note at a time and check completion.
+    call melody_tick
+    ld a, (melody_active)
+    or a
+    ret nz
+    jp @announce_to_pac
+
+@phase_pac_timer:
     ld hl, state_ready_timer
     dec (hl)
     ret nz
-
-    ; Phase just expired — decide what to do next.
-    ld a, (state_ready_phase)
-    cp READY_PHASE_ANNOUNCE
-    jr nz, @to_play
-    jp @announce_to_pac
 
 @to_play:
     ld a, GS_PLAY

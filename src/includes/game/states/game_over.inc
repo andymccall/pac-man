@@ -4,6 +4,11 @@
 state_game_over_timer: dl 180     ; ~3 s at 60 fps
 
 state_game_over_enter:
+    ; Defensive siren mute. state_dying_enter normally stops it before
+    ; we get here, but level-clear → game-over isn't a real path today
+    ; and re-issuing is harmless.
+    call siren_stop
+
     ; Persist the high score if this run beat the stored top. No-op if
     ; player_1_score <= cfg_high_score; otherwise writes PACMAN.CFG.
     call config_high_score_commit

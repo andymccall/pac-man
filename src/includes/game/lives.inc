@@ -65,7 +65,10 @@ bonus_life_check:
     ld a, (lives)
     inc a
     ld (lives), a
-    ret
+
+    ; 5-note ascending fanfare. Fires once per game (the flag above
+    ; gates it).
+    jp melody_start_bonus_life
 
 ; lives_pop — if a deduction is pending, decrement lives by 1 and
 ; visually remove the rightmost icon from the HUD strip. Called every

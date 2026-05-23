@@ -11,6 +11,7 @@ credit_deposit:
     ld a, (credit)
     inc a
     ld (credit), a
+    call audio_credit
     call keyboard_wait_for_release
     ret
 

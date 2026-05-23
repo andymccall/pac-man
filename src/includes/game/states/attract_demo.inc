@@ -93,7 +93,11 @@ state_attract_demo_enter:
 
     ; Reset the scripted-route cursor.
     call pac_script_reset
-    ret
+
+    ; Background siren — arcade plays it during the demo too, so the
+    ; attract loop sounds like a real game. Stopped on demo death (via
+    ; state_dying_enter) or demo timeout (@demo_to_attract below).
+    jp siren_start
 
 ; state_ready_enter_for_demo — borrow GS_READY's maze + sprite reset.
 ; Identical to state_ready_enter except we don't arm the 2 s READY timer
@@ -202,6 +206,13 @@ state_attract_demo_tick:
     call fruit_tick
     call fruit_collision_check
 
+    ; Siren sweep is VDP-driven (frequency envelope) — no per-frame
+    ; call needed here either.
+
+    ; Tick the melody player so fruit / bonus-life jingles can drip
+    ; through during the demo too.
+    call melody_tick
+
     call score_popup_tick
     ld a, (state_play_eat_freeze_timer)
     or a
@@ -270,6 +281,10 @@ state_attract_demo_tick:
     ; Demo timed out or cleared the maze somehow — same exit as the
     ; dying.inc demo branch. Next state picked by the cfg_show_score_table
     ; DIP (CHARS by default, SCORES when enabled).
+    ;
+    ; Death-exit paths go through state_dying_enter which already stops
+    ; the siren; this is the non-death exit, so silence it explicitly.
+    call siren_stop
     xor a
     ld (demo_active), a
     call config_post_demo_state

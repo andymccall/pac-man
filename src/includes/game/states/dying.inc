@@ -32,6 +32,10 @@ state_dying_anim_tick:    db 0        ; ticks remaining before next frame
 state_dying_post_tick:    db 0        ; ticks remaining once anim done
 
 state_dying_enter:
+    ; Background siren stops the moment Pac dies; will restart from
+    ; state_play_enter on respawn (or stay silent through GAME_OVER).
+    call siren_stop
+
     ; Arm the pre-anim freeze. Ghosts stay visible and Pac stays in
     ; his current frame for the duration — the actual death sequence
     ; kicks in when the freeze expires (see dying_begin_anim).
@@ -68,7 +72,11 @@ dying_begin_anim:
     ld (state_dying_anim_tick), a
     ld a, state_dying_post_hold
     ld (state_dying_post_tick), a
-    ret
+
+    ; Kick off the death jingle — descending chromatic sweep, ~1.7 s.
+    ; Aligned with the visual death animation rather than the earlier
+    ; 1 s freeze so the music and the dying frames hit together.
+    jp melody_start_death
 
 state_dying_tick:
     ; Keep the HUD ticking so the death pause doesn't look frozen.
@@ -78,6 +86,9 @@ state_dying_tick:
     call credit_display
     macro_text_set_color VDU_COL_WHITE
     call display_player_1_score
+
+    ; Advance the death jingle one frame.
+    call melody_tick
 
     ; Phase 1 — pre-anim freeze. While this counts down, ghosts and
     ; Pac stay on screen exactly as they were at the collision moment.

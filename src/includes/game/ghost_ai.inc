@@ -586,6 +586,12 @@ fright_activate:
     ld (fright_eaten_count), a
     ld (state_play_fright_anim_phase), a   ; restart blink at frame 8
 
+    ; Swap the siren channel to the faster "wakka wakka" envelope so
+    ; the background pitch shifts the moment fright kicks in. The
+    ; siren note keeps playing — only the envelope shape changes.
+    ; siren_set_normal in fright_tick puts it back on expiry.
+    call siren_set_fright
+
     ; Swap Pac to the fright-active speed for this level (#22).
     ; pac_speed_select_normal in fright_tick (on expiry) reverses it;
     ; ghost_ai_init also resets to normal as a defensive measure for
@@ -637,11 +643,13 @@ fright_tick:
     ret nz                        ; still ticking
 
     ; Expired. Clear the active flag, swap Pac back to his normal-mode
-    ; speed (#22), and reapply per-ghost frames: non-eaten ghosts swap
-    ; back to their normal colours, eaten ghosts stay on their eyes frame.
+    ; speed (#22), restore the siren to its normal envelope, and reapply
+    ; per-ghost frames: non-eaten ghosts swap back to their normal
+    ; colours, eaten ghosts stay on their eyes frame.
     xor a
     ld (fright_active), a
     call pac_speed_select_normal
+    call siren_set_normal
     jp ghosts_animate
 
 ; ---------------------------------------------------------------------------
@@ -817,6 +825,11 @@ ghost_eat:
     call vdu_sprite_show
     ld a, SCORE_POPUP_DURATION
     ld (score_popup_timer), a
+
+    ; Ascending-chord note — C5 / E5 / G5 / C6 for ghosts 1..4 of the
+    ; chain. Must fire BEFORE the inc below so fright_eaten_count reads
+    ; as the 0-based index of *this* eat, not the next one.
+    call audio_ghost_eaten
 
     ld a, (fright_eaten_count)
     inc a
