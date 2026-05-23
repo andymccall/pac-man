@@ -75,8 +75,14 @@ ghost_speed_tunnel: equ 102    ; ~40% — arcade rule: ghosts slow on the
                                ; tunnel row. Pac is unaffected. Eaten ghosts
                                ; (eyes) also unaffected — they take the
                                ; @speed_eyes branch before this check.
-FRIGHT_DURATION:        equ 360    ; 6 s @ 60 fps
-FRIGHT_FLASH_THRESHOLD: equ 120    ; final 2 s — alternate blue/white
+; Fright timing. Total duration is per-level (see fright_duration_table /
+; fright_duration_for_level) — the arcade ramps it down across levels and
+; turns it off entirely at L17 and L19+. The flash threshold (last "blue/
+; white" window before fright ends) stays a flat 2 s at all levels: when
+; total fright is shorter than that, ghosts simply flash for the entire
+; window, which roughly matches the arcade's reduced flash count at high
+; levels (5 flashes at 2 s+, 3 flashes at 1 s).
+FRIGHT_FLASH_THRESHOLD: equ 120    ; last 2 s — alternate blue/white
 
 ; Per-ghost dot-counter release thresholds. Pinky releases immediately,
 ; Inky after 30 pellets eaten this level, Clyde after 60. (Arcade has a
@@ -244,6 +250,87 @@ elroy_update:
     ret nz
     ld a, 1
     ld (blinky_elroy_level), a
+    ret
+
+; --- Per-level fright duration ---------------------------------------------
+;
+; Arcade Pac-Man ramps the power-pellet fright window down across levels
+; and turns it off entirely at L17 and L19+. Values are durations in
+; frames at 60 fps (Pittman / Birch dossier):
+;
+;   L1:  360 (6 s)   L7:  120 (2 s)   L13:  60 (1 s)   L19+:  0
+;   L2:  300 (5 s)   L8:  120 (2 s)   L14: 180 (3 s)
+;   L3:  240 (4 s)   L9:   60 (1 s)   L15:  60 (1 s)
+;   L4:  180 (3 s)   L10: 300 (5 s)   L16:  60 (1 s)
+;   L5:  120 (2 s)   L11: 120 (2 s)   L17:   0
+;   L6:  300 (5 s)   L12:  60 (1 s)   L18:  60 (1 s)
+;
+; A 0 entry means "no fright at all" — Pac still scores the 50 pts for
+; the power pellet but ghosts don't turn blue. fright_activate detects
+; this and bails before flipping fright_active.
+;
+; Table is 19 entries (L1..L19+) of two bytes each; lookup clamps any
+; level >= 19 onto the L19+ row.
+fright_duration_table:
+    dw 360            ; L1
+    dw 300            ; L2
+    dw 240            ; L3
+    dw 180            ; L4
+    dw 120            ; L5
+    dw 300            ; L6
+    dw 120            ; L7
+    dw 120            ; L8
+    dw  60            ; L9
+    dw 300            ; L10
+    dw 120            ; L11
+    dw  60            ; L12
+    dw  60            ; L13
+    dw 180            ; L14
+    dw  60            ; L15
+    dw  60            ; L16
+    dw   0            ; L17 — no fright
+    dw  60            ; L18
+    dw   0            ; L19+ — no fright
+
+; fright_duration_for_level — return HL = fright duration in frames for
+; current_level. Clamps L>=19 to the L19+ row. Returns 0 when fright is
+; disabled for the level (callers should treat 0 as "skip fright").
+;
+; HLU on return is 0 — the caller writes `ld (fright_timer), hl` (a
+; 24-bit ADL store) and we don't want $04 (the upper byte of the data
+; segment, picked up by `add hl, de` against the table address) leaking
+; into fright_timer's upper byte where it would mis-trigger the
+; timer-expiry test on a later tick. Standard ADL upper-byte hygiene.
+; Destroys: af, de, hl
+fright_duration_for_level:
+    ld a, (current_level)
+    or a
+    jr nz, @nonzero
+    inc a                            ; defensive — level 0 shouldn't happen
+@nonzero:
+    cp 20
+    jr c, @ok
+    ld a, 19                         ; clamp at L19+
+@ok:
+    dec a                            ; → index 0..18
+    add a, a                         ; index × 2 (dw entries)
+
+    ; Build table entry address in HL. HLU ends up = $04 here (since
+    ; fright_duration_table is in the code segment), which is fine
+    ; while we use HL purely as a pointer.
+    ld hl, 0
+    ld l, a
+    ld de, fright_duration_table
+    add hl, de
+
+    ; Read low + high bytes via E and D, then rebuild HL with HLU = 0.
+    ld a, (hl)
+    inc hl
+    ld d, (hl)
+    ld e, a
+    ld hl, 0                         ; clears HLU + H + L
+    ld h, d
+    ld l, e
     ret
 
 ; --- Per-ghost state -------------------------------------------------------
@@ -483,10 +570,18 @@ ghost_ai_tick:
 ; ghosts keep bobbing.
 ; Destroys: af
 fright_activate:
+    ; Per-level fright duration: 0 means "no fright at all on this
+    ; level" (arcade behaviour at L17 and L19+). Bail before flipping
+    ; any state so Pac just scores the 50-pt power-pellet and ghosts
+    ; keep their normal targeting / colour / speed.
+    call fright_duration_for_level
+    ld a, h
+    or l
+    ret z
+
+    ld (fright_timer), hl
     ld a, 1
     ld (fright_active), a
-    ld hl, FRIGHT_DURATION
-    ld (fright_timer), hl
     xor a
     ld (fright_eaten_count), a
     ld (state_play_fright_anim_phase), a   ; restart blink at frame 8
@@ -1114,9 +1209,10 @@ clyde_chase_target:
     ld de, 64
     or a
     sbc hl, de
-    ret nc                        ; >= 64 → keep targeting Pac
+    jp z, ghost_scatter_target    ; == 64 → arcade treats as "close" → scatter
+    ret nc                        ; > 64 → keep targeting Pac
 
-    jp ghost_scatter_target       ; close → override to scatter corner
+    jp ghost_scatter_target       ; < 64 → close → override to scatter corner
 
 ; ---------------------------------------------------------------------------
 ; ghost_at_no_up_tile — Z=1 iff (bd_cur_row, bd_cur_col) is one of the
