@@ -1,4 +1,4 @@
-# GitHub Actions workflow: build pac-man.bin (#8). Builds the toolchain
+# GitHub Actions workflow: build PAC-MAN.BIN (#8). Builds the toolchain
 # image inline (cached via GHA) then runs `make` inside it, uploading
 # the resulting Agon Light 2 binary as an artifact.
 #
@@ -57,7 +57,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: 🎮 Build pac-man.bin
+      - name: 🎮 Build PAC-MAN.BIN
         run: |
           docker run --rm \
             -v "${PWD}:/work" \
@@ -68,20 +68,20 @@ jobs:
 
       - name: 📐 Report binary size
         run: |
-          size=$(stat -c %s bin/pac-man.bin)
+          size=$(stat -c %s bin/PAC-MAN.BIN)
           size_kb=$(( (size + 1023) / 1024 ))
           {
             echo "## 💡 Agon Light 2 build"
             echo ""
             echo "| File | Bytes | KB |"
             echo "|---|---:|---:|"
-            printf "| \`bin/pac-man.bin\` | %s | %s |\n" "${size}" "${size_kb}"
+            printf "| \`bin/PAC-MAN.BIN\` | %s | %s |\n" "${size}" "${size_kb}"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 📤 Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: pac-man-agon
-          path: bin/pac-man.bin
+          path: bin/PAC-MAN.BIN
           if-no-files-found: error
           retention-days: 14

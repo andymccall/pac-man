@@ -1,5 +1,5 @@
 # GitHub Actions workflow: tag-driven release (#8). Pushes a `v*` tag,
-# CI builds pac-man.bin inside the toolchain container, bundles a zip
+# CI builds PAC-MAN.BIN inside the toolchain container, bundles a zip
 # with the binary + a README, and publishes a GitHub Release.
 #
 # Trigger:
@@ -54,7 +54,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: 🎮 Build pac-man.bin
+      - name: 🎮 Build PAC-MAN.BIN
         run: |
           docker run --rm \
             -v "${PWD}:/work" \
@@ -70,15 +70,15 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           BUNDLE="pac-man-${TAG}-agon"
           mkdir -p "release/${BUNDLE}"
-          cp bin/pac-man.bin "release/${BUNDLE}/"
+          cp bin/PAC-MAN.BIN "release/${BUNDLE}/"
           cat > "release/${BUNDLE}/README.txt" <<EOF
           Pac-Man (Agon Light 2 port)
           Version: ${TAG}
 
-          Single-file binary. Copy pac-man.bin onto the Agon's SD card
+          Single-file binary. Copy PAC-MAN.BIN onto the Agon's SD card
           (e.g. into /mos/), then at the MOS prompt:
 
-              run pac-man.bin
+              run PAC-MAN.BIN
 
           Or load it under the fab-agon-emulator:
 
@@ -93,7 +93,7 @@ jobs:
 
           size=$(stat -c %s "release/${BUNDLE}.zip")
           size_kb=$(( (size + 1023) / 1024 ))
-          bin_size=$(stat -c %s bin/pac-man.bin)
+          bin_size=$(stat -c %s bin/PAC-MAN.BIN)
           bin_kb=$(( (bin_size + 1023) / 1024 ))
 
           # Emit a markdown size table both for the run summary AND for
@@ -103,7 +103,7 @@ jobs:
             echo ""
             echo "| Item | Size |"
             echo "|---|---:|"
-            printf "| \`bin/pac-man.bin\`      | %s bytes (%s KB) |\n" "${bin_size}" "${bin_kb}"
+            printf "| \`bin/PAC-MAN.BIN\`      | %s bytes (%s KB) |\n" "${bin_size}" "${bin_kb}"
             printf "| \`%s.zip\` | %s bytes (%s KB) |\n" "${BUNDLE}" "${size}" "${size_kb}"
           } > /tmp/sizes.md
           cat /tmp/sizes.md >> "$GITHUB_STEP_SUMMARY"
@@ -136,7 +136,7 @@ jobs:
 
             ${{ steps.bundle.outputs.size_table }}
 
-            The zip contains `pac-man.bin` plus a README explaining
+            The zip contains `PAC-MAN.BIN` plus a README explaining
             how to load it on an Agon Light 2 (hardware or emulator).
           prerelease: ${{ steps.bundle.outputs.prerelease == 'true' }}
           fail_on_unmatched_files: true
