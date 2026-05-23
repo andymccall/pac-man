@@ -63,7 +63,7 @@ Full backlog: [open issues](https://github.com/andymccall/pac-man/issues).
 
 | Platform | CPU | Assembler | Output | Display |
 |---|---|---|---|---|
-| Agon Light 2 | eZ80 ADL | `ez80asm` | `bin/pac-man.bin` | VDU mode 20 — 512×384 @ 64 colours, 60 Hz |
+| Agon Light 2 | eZ80 ADL | `ez80asm` | `bin/PAC-MAN.BIN` | VDU mode 20 — 512×384 @ 64 colours, 60 Hz |
 
 The arcade screen is 28×31 tiles (224×248 px). Mode 20 gives us a 64×48 tile grid, so the 1:1 arcade maze fits with margins; the side margins host the HUD.
 
@@ -81,7 +81,7 @@ Don't want to install the toolchain on your host? The `Dockerfile` packages `ez8
 ## Building
 
 ```sh
-make           # build bin/pac-man.bin
+make           # build bin/PAC-MAN.BIN
 make clean     # wipe bin/ and release/
 make release   # bundle pac-man-<git-describe>.zip into release/
 make run       # launch fab-agon-emulator on the bin/ folder
@@ -114,7 +114,7 @@ docker run --rm -v "$PWD:/work" -w /work \
     make
 ```
 
-The `--user` flag keeps the produced `bin/pac-man.bin` owned by your host user rather than `root`.
+The `--user` flag keeps the produced `bin/PAC-MAN.BIN` owned by your host user rather than `root`.
 
 ## Releases
 

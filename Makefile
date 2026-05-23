@@ -16,6 +16,11 @@ FAB_AGON_EMU_FLAGS = --vdp $(HOME)/development/tools/fab-agon/firmware/vdp_conso
 # Project info
 # ---------------------------------------------------------------------------
 NAME               = pac-man
+# Output binary name follows the Agon `dir` convention (uppercase 8.3
+# basename + .BIN extension) so it sits naturally alongside the other
+# MOS-shipped binaries on the SD card. Source files / release zip /
+# repo / branch names stay lowercase (Unix convention).
+BIN_NAME           = PAC-MAN.BIN
 SRCDIR             = src
 BUILDDIR           = bin
 RELEASEDIR         = release
@@ -38,7 +43,7 @@ AGON_SRCS := $(shell find $(SRCDIR) -type f \( -name '*.asm' -o -name '*.inc' \)
 AGON_ASSETS := $(shell find $(SRCDIR)/assets -type f -name '*.rgba2' 2>/dev/null)
 
 AGON_MAIN = $(SRCDIR)/$(NAME).asm
-AGON_OUT  = $(BUILDDIR)/$(NAME).bin
+AGON_OUT  = $(BUILDDIR)/$(BIN_NAME)
 
 # ---------------------------------------------------------------------------
 # ANSI colour + emoji output

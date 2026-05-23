@@ -1,8 +1,9 @@
 # GitHub Actions workflow: per-PR build-size delta comment (#8).
 #
-# Builds both sides of the PR (HEAD + base ref), measures bin/pac-man.bin
+# Builds both sides of the PR (HEAD + base ref), measures bin/PAC-MAN.BIN
 # on each, and posts (or updates) a markdown comment on the PR showing
-# the byte delta.
+# the byte delta. (Falls back to the pre-#88 lowercase name if the base
+# ref predates that rename.)
 #
 # The comment is upserted (matched on a hidden HTML marker) so a rapid
 # push doesn't spam the PR with new comments — one comment per PR,
@@ -100,14 +101,25 @@ jobs:
           HEAD_LABEL="${GITHUB_HEAD_REF}@${GITHUB_SHA:0:7}"
           BASE_LABEL="${GITHUB_BASE_REF}"
 
-          if [ ! -f head/bin/pac-man.bin ]; then
+          # Resolve which bin name each side produced. #88 renamed the
+          # output to PAC-MAN.BIN; for PRs whose base ref predates that
+          # merge we still need to look for the old lowercase name on
+          # the base side.
+          HEAD_BIN=head/bin/PAC-MAN.BIN
+          [ -f "$HEAD_BIN" ] || HEAD_BIN=head/bin/pac-man.bin
+
+          if [ ! -f "$HEAD_BIN" ]; then
             echo "HEAD build missing — failing." >&2
             exit 1
           fi
 
-          head_size=$(stat -c %s head/bin/pac-man.bin)
-          if [ -f base/bin/pac-man.bin ]; then
-            base_size=$(stat -c %s base/bin/pac-man.bin)
+          head_size=$(stat -c %s "$HEAD_BIN")
+
+          BASE_BIN=base/bin/PAC-MAN.BIN
+          [ -f "$BASE_BIN" ] || BASE_BIN=base/bin/pac-man.bin
+
+          if [ -f "$BASE_BIN" ]; then
+            base_size=$(stat -c %s "$BASE_BIN")
             delta=$((head_size - base_size))
           else
             base_size="—"
@@ -135,7 +147,7 @@ jobs:
             printf "| HEAD (\`%s\`) | %s |\n" "${HEAD_LABEL}" "${head_size}"
             printf "| **Delta** | **%s** |\n" "${delta_str}"
             echo ""
-            echo "_Measured on \`bin/pac-man.bin\` produced by the toolchain image built from this PR's \`Dockerfile\`._"
+            echo "_Measured on \`bin/PAC-MAN.BIN\` produced by the toolchain image built from this PR's \`Dockerfile\`._"
           } > /tmp/comment.md
 
           # Body to a step output via heredoc so the github-script
