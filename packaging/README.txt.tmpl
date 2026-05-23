@@ -1,0 +1,97 @@
+================================================================
+                  PAC-MAN for the Agon Light 2
+                          @@VERSION@@
+================================================================
+
+An arcade-faithful port of the 1980 Midway / Namco PAC-MAN to
+the Agon Light 2. Written in eZ80 ADL assembly.
+
+This is an ALPHA release. Core gameplay, ghost AI, attract
+rotation, sound, high scores, and DIP settings are all in.
+Polish + some smaller arcade-fidelity items still in flight.
+
+
+CONTENTS
+--------
+
+  PAC-MAN.BIN     The game binary (Agon Light 2)
+  pacman_cfg.py   Python tool to inspect / edit PAC-MAN.CFG
+  README.TXT      This file
+
+
+INSTALLING ON AN AGON LIGHT 2
+-----------------------------
+
+1.  Copy PAC-MAN.BIN onto your Agon Light 2's SD card.
+    Typical location: /mos/
+    Filename must stay uppercase: PAC-MAN.BIN
+
+2.  At the MOS prompt, run:
+
+        run PAC-MAN.BIN
+
+3.  On first boot the game creates PAC-MAN.CFG next to the
+    binary. It stores DIP settings and the high-score table.
+    Defaults work fine — you don't have to touch it.
+
+
+RUNNING UNDER THE EMULATOR
+--------------------------
+
+If you don't have hardware, fab-agon-emulator works well.
+Drop PAC-MAN.BIN into a folder, then:
+
+    fab-agon-emulator --sdcard ./ --vdp vdp_console8.so
+
+  https://github.com/tomm/fab-agon-emulator
+
+
+CONTROLS
+--------
+
+  Arrow keys      Move Pac-Man
+  C               Insert a credit
+  1               Start a one-player game
+  2               Start a two-player game (when 2+ credits)
+  P               Pause
+  Esc             Quit
+
+
+SETTINGS + HIGH SCORES (PAC-MAN.CFG)
+------------------------------------
+
+The included Python tool inspects and edits the file:
+
+    python pacman_cfg.py dump PAC-MAN.CFG
+    python pacman_cfg.py edit PAC-MAN.CFG --lives 5
+    python pacman_cfg.py edit PAC-MAN.CFG --show-score-table on
+
+The high-score table itself is read-only via the tool (use
+the game to set new scores). Run with no arguments for help.
+
+
+LINKS
+-----
+
+  Source code:    https://github.com/@@REPO@@
+  Wiki:           https://github.com/@@REPO@@/wiki
+  Report a bug:   https://github.com/@@REPO@@/issues
+
+If you enjoy it and want to support development:
+
+  Ko-Fi:          https://ko-fi.com/andymccall
+
+
+CREDITS
+-------
+
+  Original game:  (C) 1980 NAMCO / MIDWAY MFG. CO.
+  Agon port:      Andy McCall <andy@bitriot.dev>
+
+Built with:
+  - agon-ez80asm
+    https://github.com/AgonPlatform/agon-ez80asm
+  - fab-agon-emulator
+    https://github.com/tomm/fab-agon-emulator
+
+================================================================

@@ -6,9 +6,10 @@
 #   git tag v1.0.0 && git push --tags
 #
 # Tag conventions:
-#   v1.0.0          stable release
-#   v1.0.0-rc.1     release candidate (auto-marked as pre-release)
-#   v1.0.0-beta.1   beta             (auto-marked as pre-release)
+#   v1.0.0           stable release
+#   v1.0.0-rc.1      release candidate (auto-marked as pre-release)
+#   v1.0.0-beta.1    beta              (auto-marked as pre-release)
+#   v0.1.0-alpha.1   alpha             (auto-marked as pre-release)
 #
 # The release notes pull from commits since the previous tag (via
 # GitHub's auto-generation feature). The binary size is included in
@@ -70,25 +71,19 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           BUNDLE="pac-man-${TAG}-agon"
           mkdir -p "release/${BUNDLE}"
+
+          # Binary + Python settings tool. README.TXT is generated from
+          # the shared template in packaging/, with @@VERSION@@ and
+          # @@REPO@@ substituted in. The Makefile's `release` target
+          # does the same substitution locally; both routes produce an
+          # identical bundle.
           cp bin/PAC-MAN.BIN "release/${BUNDLE}/"
-          cat > "release/${BUNDLE}/README.txt" <<EOF
-          Pac-Man (Agon Light 2 port)
-          Version: ${TAG}
+          cp tools/pacman_cfg.py "release/${BUNDLE}/"
+          sed -e "s|@@VERSION@@|${TAG}|g" \
+              -e "s|@@REPO@@|${GITHUB_REPOSITORY}|g" \
+              packaging/README.txt.tmpl \
+              > "release/${BUNDLE}/README.TXT"
 
-          Single-file binary. Copy PAC-MAN.BIN onto the Agon's SD card
-          (e.g. into /mos/), then at the MOS prompt:
-
-              run PAC-MAN.BIN
-
-          Or load it under the fab-agon-emulator:
-
-              fab-agon-emulator --sdcard ./ --vdp vdp_console8.so
-
-          See the project README for emulator setup details:
-            https://github.com/${GITHUB_REPOSITORY}
-
-          (C) 1980 MIDWAY MFG. CO. — Agon remake by bitriot.
-          EOF
           (cd release && zip -qr "${BUNDLE}.zip" "${BUNDLE}")
 
           size=$(stat -c %s "release/${BUNDLE}.zip")
@@ -136,7 +131,12 @@ jobs:
 
             ${{ steps.bundle.outputs.size_table }}
 
-            The zip contains `PAC-MAN.BIN` plus a README explaining
-            how to load it on an Agon Light 2 (hardware or emulator).
+            The zip contains:
+
+            - `PAC-MAN.BIN` — the Agon Light 2 binary
+            - `pacman_cfg.py` — Python tool to inspect / edit DIP settings + high scores
+            - `README.TXT` — install + usage instructions
+
+            See the [wiki](https://github.com/${{ github.repository }}/wiki) for technical details.
           prerelease: ${{ steps.bundle.outputs.prerelease == 'true' }}
           fail_on_unmatched_files: true
