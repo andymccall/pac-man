@@ -49,13 +49,19 @@ Controls are keyboard today; the [EIGHTSBITWIDE Arcade board](https://andymccall
 | Level progression on maze clear | ✅ |
 | Original Pac-Man intermission cutscenes (MVP — title + Pac chase) | ✅ |
 | Double-buffered rendering (no tearing during heavy redraws) | ✅ |
-| Sound | ❌ (issue #10) |
-| Per-level Pac speed / Cruise Elroy | ❌ (issues #17, #22) |
-| Lives DIP-switch (3 vs 5 starting lives) | ❌ (issue #26) |
-| High score persistence + table | ❌ (issues #29, #30) |
+| Sound — chomp, siren, fright wakka, ghost-eaten chord, fruit / bonus-life / death jingles, READY melody, credit bleep | ✅ (issue #10) |
+| Per-level sub-pixel Pac speed | ✅ (issue #22) |
+| Cruise Elroy (Blinky speed-up at low pellet counts) | ✅ (issue #17) |
+| Per-level fright duration (L17 / L19+ disable fright) | ✅ (PR #85) |
+| Lives DIP-switch (3 vs 5 starting lives) | ✅ (issue #26) |
+| High-score persistence (`PACMAN.CFG`) | ✅ (issue #30) |
+| High-score table screen (DIP-gated off by default — arcade had no top-10) | ✅ (issue #29) |
+| Demo-only Pac speed override (route plays at its recorded speed) | ✅ (PR #85) |
 | Two-player alternating-turn mode | ❌ (issue #69) |
 | Joystick / gamepad input | ❌ (issue #68) |
+| Per-level ghost speed table (currently flat at L1's 75 %) | ❌ (issue #89) |
 | Super Pac-Man intermissions | ❌ (issue #66, placeholder) |
+| Eyes-return undulation sound | ❌ |
 
 Full backlog: [open issues](https://github.com/andymccall/pac-man/issues).
 
@@ -152,7 +158,10 @@ pac-man/
 │       └── game/                       #   Game logic — see below
 ├── tools/
 │   ├── png_to_rgba2.py                 # PNG → Agon RGBA2222 single-file converter
-│   └── gen_score_popups.py             # Generate Pinky-pink score popup sprites
+│   ├── gen_score_popups.py             # Generate Pinky-pink score popup sprites
+│   └── pacman_cfg.py                   # Inspect / edit PACMAN.CFG (DIP + high scores)
+├── packaging/
+│   └── README.txt.tmpl                 # Source template for the bundled release README
 ├── .github/
 │   ├── workflows/                      # build / docker / release / size-delta / lint
 │   └── dependabot.yml                  # Weekly GHA action updates
@@ -171,6 +180,8 @@ The `src/includes/game/` tree holds the actual game logic — one file per syste
 - **Main loop** in [src/pac-man.asm](src/pac-man.asm) is just `game_timer_tick` → `game_state_tick` → ESC check → `vdu_vblank` → `vdu_refresh`. The game ticks at the VDP's 60 Hz vblank.
 - **Sprites + bitmaps** ride on the Agon VDP's sprite + bitmap-buffer system. Sprite slot 0 is Pac, slots 1-4 are ghosts, 5 is the (attract-mode) reverse-ghost demo, 6-13 are the fruit slots, 14 is the lives icon, 15 is the score popup. Bitmap buffers carry the maze tiles (400-435), pellets (440-443), score popups (340-343), banners (110-112), and the custom font (100). The full buffer-id map lives in the includes under `sprites/`.
 - **Custom font** is uploaded at boot via the VDP Font API (`VDU 23, 0, 0xA0` write + `0x95` create + select). The font glyphs were extracted from `reference/sprite_sheet.png` directly. See [src/includes/game/font.inc](src/includes/game/font.inc); note the **consolidate** step — the VDP rejects multi-block buffers as font sources, so we issue a `VDU 23, 0, 0xA0, id, 14` to merge the upload into a single block before the create command.
+- **Sound** layers in cleanly via [src/includes/api/vdu_audio.inc](src/includes/api/vdu_audio.inc) (platform primitives wrapping `VDU 23, 0, $85, …`) and [src/includes/game/audio.inc](src/includes/game/audio.inc) (game-specific sounds — chomp, siren, fright wakka envelope swap, ghost-eaten chord, fruit / bonus-life / death jingles, READY melody, credit bleep). 5 of the VDP's 32 channels in use; full architecture in the [Audio wiki page](https://github.com/andymccall/pac-man/wiki/Audio).
+- **Persistent settings + high score** live in `PACMAN.CFG` (binary, 80 bytes, schema v3) written next to the game binary. Holds the lives DIP, the top-10 score table, and the `show_score_table` DIP. Edit via [`tools/pacman_cfg.py`](tools/pacman_cfg.py) — the table itself is read-only via the tool (use the game to set new scores).
 
 A wiki with per-system walk-throughs lives at [github.com/andymccall/pac-man/wiki](https://github.com/andymccall/pac-man/wiki) — Architecture, Game states, Ghost AI, Sprites + VDP, Asset pipeline, Maze coord math, etc. Diagrams + screenshots are still being added (issue #33).
 
