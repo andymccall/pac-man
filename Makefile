@@ -122,11 +122,18 @@ clean:
 release: build
 	@printf "\n$(BOLD)$(MAGENTA)📦 Packaging release $(GIT_INFO)$(RESET)\n"
 	@printf "$(MAGENTA)$(RULE)$(RESET)\n"
-	@mkdir -p $(RELEASEDIR)/$(NAME)
-	cp $(AGON_OUT) $(RELEASEDIR)/$(NAME)/
-	@test -f README.md && cp README.md $(RELEASEDIR)/$(NAME)/ || true
-	cd $(RELEASEDIR) && zip -r $(NAME)-$(GIT_INFO).zip $(NAME)/
-	@rm -rf $(RELEASEDIR)/$(NAME)
+	@mkdir -p $(RELEASEDIR)/$(NAME)-$(GIT_INFO)
+	cp $(AGON_OUT) $(RELEASEDIR)/$(NAME)-$(GIT_INFO)/
+	cp tools/pacman_cfg.py $(RELEASEDIR)/$(NAME)-$(GIT_INFO)/
+	@# Generate README.TXT from packaging/README.txt.tmpl, substituting
+	@# the version (GIT_INFO) and repo path. The CI workflow does the
+	@# same substitution against GITHUB_REF_NAME / GITHUB_REPOSITORY.
+	@sed -e 's|@@VERSION@@|$(GIT_INFO)|g' \
+	     -e 's|@@REPO@@|andymccall/pac-man|g' \
+	     packaging/README.txt.tmpl \
+	     > $(RELEASEDIR)/$(NAME)-$(GIT_INFO)/README.TXT
+	cd $(RELEASEDIR) && zip -r $(NAME)-$(GIT_INFO).zip $(NAME)-$(GIT_INFO)/
+	@rm -rf $(RELEASEDIR)/$(NAME)-$(GIT_INFO)
 	@printf "$(BOLD)$(GREEN)✅ Release: $(RELEASEDIR)/$(NAME)-$(GIT_INFO).zip$(RESET)\n"
 
 # ---------------------------------------------------------------------------
